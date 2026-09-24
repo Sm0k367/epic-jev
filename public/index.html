@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Epic Jev - Do Anything with AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
+        }
+        
+        .subtitle {
+            font-size: 1.1em;
+            opacity: 0.95;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+        
+        .tab-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 2px solid rgba(255,255,255,0.3);
+            padding: 10px 20px;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+        }
+        
+        .tab-btn:hover {
+            background: rgba(255,255,255,0.3);
+            border-color: rgba(255,255,255,0.5);
+        }
+        
+        .tab-btn.active {
+            background: white;
+            color: #667eea;
+            border-color: white;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: grid;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+            gap: 20px;
+        }
+        
+        .demo-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+        
+        .demo-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+        
+        .demo-card h2 {
+            color: #667eea;
+            margin-bottom: 10px;
+            font-size: 1.2em;
+        }
+        
+        .demo-card p {
+            color: #666;
+            margin-bottom: 15px;
+            font-size: 0.9em;
+        }
+        
+        .demo-card textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 0.85em;
+            resize: vertical;
+            min-height: 70px;
+            margin-bottom: 10px;
+        }
+        
+        .button {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            width: 100%;
+        }
+        
+        .button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102,126,234,0.4);
+        }
+        
+        .button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .output {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 15px;
+            min-height: 80px;
+            margin-top: 15px;
+            font-family: monospace;
+            font-size: 0.85em;
+            line-height: 1.6;
+            max-height: 250px;
+            overflow-y: auto;
+            color: #333;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #667eea;
+            animation: pulse 1s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        .status {
+            background: rgba(255,255,255,0.95);
+            border-left: 4px solid #2196f3;
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 25px;
+            color: #0d47a1;
+            backdrop-filter: blur(10px);
+        }
+        
+        .status.demo {
+            border-left-color: #ff9800;
+            color: #e65100;
+        }
+        
+        .status.live {
+            border-left-color: #4caf50;
+            color: #1b5e20;
+        }
+        
+        .demo-info {
+            background: #f0f4ff;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 12px;
+            border-left: 4px solid #667eea;
+            font-size: 0.85em;
+        }
+        
+        .demo-info h3 {
+            color: #667eea;
+            margin-bottom: 6px;
+            font-size: 0.9em;
+        }
+        
+        .demo-info p {
+            color: #555;
+            font-size: 0.8em;
+            margin: 3px 0;
+        }
+        
+        .examples {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+        
+        .example-btn {
+            background: #f0f0f0;
+            border: 1px solid #ddd;
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.75em;
+            transition: all 0.3s ease;
+        }
+        
+        .example-btn:hover {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+        
+        footer {
+            text-align: center;
+            color: rgba(255,255,255,0.9);
+            margin-top: 40px;
+            padding: 20px;
+        }
+        
+        .category-label {
+            display: inline-block;
+            background: rgba(102,126,234,0.2);
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            margin-bottom: 10px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🚀 Epic Jev - Do Anything</h1>
+            <p class="subtitle">AI for Every Task • Real-time Streaming • Enterprise-Ready</p>
+        </header>
+        
+        <div id="status" class="status demo">
+            ⚠️ <strong>Demo Mode</strong> - Simulated responses (no API key). Set AI_GATEWAY_API_KEY for real Jev.
+        </div>
+        
+        <!-- Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" onclick="switchTab('core')">Core Tasks</button>
+            <button class="tab-btn" onclick="switchTab('content')">Content Analysis</button>
+            <button class="tab-btn" onclick="switchTab('safety')">Safety & Compliance</button>
+            <button class="tab-btn" onclick="switchTab('routing')">Routing & Intent</button>
+        </div>
+
+        <!-- CORE TASKS TAB -->
+        <div id="core" class="tab-content active">
+            <div class="grid">
+                <!-- Evaluation -->
+                <div class="demo-card">
+                    <div class="category-label">🎯 Core</div>
+                    <h2>📋 Text Evaluation</h2>
+                    <p>Judge accuracy and validity of statements</p>
+                    <div class="demo-info">
+                        <h3>Use Cases:</h3>
+                        <p>Fact-checking • Claim verification • Statement validation</p>
+                    </div>
+                    <textarea id="eval-input" placeholder="Enter a statement to evaluate...">Machine learning is a subset of artificial intelligence.</textarea>
+                    <div class="examples">
+                        <button class="example-btn" onclick="setExample('eval', 'Is Python the most popular programming language?')">Example 1</button>
+                        <button class="example-btn" onclick="setExample('eval', 'The Earth revolves around the Sun.')">Example 2</button>
+                    </div>
+                    <button class="button" onclick="runEvaluation()">Evaluate</button>
+                    <div id="eval-output" class="output"></div>
+                </div>
+                
+                <!-- Extraction -->
+                <div class="demo-card">
+                    <div class="category-label">🎯 Core</div>
+                    <h2>🔍 Data Extraction</h2>
+                    <p>Pull key concepts and information</p>
+                    <div class="demo-info">
+                        <h3>Use Cases:</h3>
+                        <p>Information extraction • Entity detection • Keyword mining</p>
+                    </div>
+                    <textarea id="extract-input" placeholder="Enter text to extract from...">Streaming delivers tokens in real-time, enabling responsive UIs with progressive rendering.</textarea>
+                    <div class="examples">
+                        <button class="example-btn" onclick="setExample('extract', 'Cloud computing provides scalable infrastructure.')">Example 1</button>
+                        <button class="example-btn" onclick="setExample('extract', 'Machine learning algorithms learn patterns from data.')">Example 2</button>
+                    </div>
+                    <button class="button" onclick="runExtraction()">Extract</button>
+                    <div id="extract-output" class="output"></div>
+                </div>
+                
+                <!-- Classification -->
+                <div class="demo-card">
+                    <div class="category-label">🎯 Core</div>
+                    <h2>🏷️ Classification</h2>
+                    <p>Categorize and label content</p>
+                    <div class="demo-info">
+                        <h3>Use Cases:</h3>
+                        <p>Sentiment analysis • Category assignment • Type detection</p>
+                    </div>
+                    <textarea id="class-input" placeholder="Enter text to classify...">The KMS implementation is elegant and performant.</textarea>
+                    <div class="examples">
+                        <button class="example-btn" onclick="setExample('class', 'This product is terrible and useless.')">Negative</button>
+                        <button class="example-btn" onclick="setExample('class', 'Amazing experience, highly recommended!')">Positive</button>
+                    </div>
+                    <button class="button" onclick="runClassification()">Classify</button>
+                    <div id="class-output" class="output"></div>
+                </div>
+                
+                <!-- Summarization -->
+                <div class="demo-card">
+                    <div class="category-label">🎯 Core</div>
+                    <h2>📝 Summarization</h2>
+                    <p>Compress content to key points</p>
+                    <div class="demo-info">
+                        <h3>Use Cases:</h3>
+                        <p>Content summary • Abstract generation • Document compression</p>
+                    </div>
+                    <textarea id="summary-input" placeholder="Enter text to summarize...">Jev excels at structured extraction, evaluation, and classification with 32K context and deterministic outputs, ideal for enterprise applications.</textarea>
+                    <div class="examples">
+                        <button class="example-btn" onclick="setExample('summary', 'AI is transforming every industry by automating tasks and improving efficiency.')">Example 1</button>
+                        <button class="example-btn" onclick="setExample('summary', 'The internet revolutionized communication, commerce, and information access.')">Example 2</button>
+                    </div>
+                    <button class="button" onclick="runSummarization()">Summarize</button>
+                    <div id="summary-output" class="output"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CONTENT ANALYSIS TAB -->
+        <div id="content" class="tab-content">
+            <div class="grid">
+                <!-- Sentiment -->
+                <div class="demo-card">
+                    <div class="category-label">📊 Analysis</div>
+                    <h2>😊 Sentiment Analysis</h2>
+                    <p>Detect emotion and tone</p>
+                    <div class="demo-info">
+                        <h3>Use Cases:</h3>
+                        <p>Customer feedback • Review analysis • Brand monitoring</p>
+                    </div>
+                    <textarea id="sentiment-input" placeholder="Enter text to analyze...">I absolutely love this product! The quality is exceptional and customer service was amazing.</textarea>
+                    <div class="examples">
+                        <button class="example-btn" onclick="setExample('sentiment', 'Disappointed with the service.')">Negative</button>
+                        <button class="example-btn" onclick="setExample('sentiment', 'Great product, works perfectly!')">Positive</button>
+                    </div>
+                    <button class="button" onclick="runSentiment()">Analyze</button>
+                    <div id="sentiment-output" class="output"></div>
+                </div>
+                
+                <!-- Entity Recognition -->
+                <div class="demo-card">
+                    <div class="category-label">📊 Analysis</div>
+                    <h2>🏢 Entity Recognition</h2>
+                    <p>Identify people, places, organizations</p>
+                    <div class="demo-info">
+                        <h3>Use Cases:</h3>
+                        <p>NER • Knowledge extraction • Reference identification</p>
+                    </div>
+                    <textarea id="entity-input" placeholder="Enter text for entity detection...">Sundar Pichai leads Google from Mountain View, driving innovation in cloud computing and AI.</textarea>
+                    <div class="examples">
+                        <button class="example-btn" onclick="setExample('entity', 'Apple CEO Tim Cook announced new products in Cupertino.')">Example 1</button>
+                        <button class="example-btn" onclick="setExample('entity', 'Microsoft partners with OpenAI in Seattle.')">Example 2</button>
+                    </div>
+                    <button class="button" onclick="runEntity()">Recognize</button>
+                    <div id="entity-output" class="output"></div>
+                </div>
+                
+                <!-- Intent Detection -->
+                <div class="demo-card">
+                    <div class="category-label">📊 Analysis</div>
+                    <h2>🎯 Intent Detection</h2>
+                    <p>Understand user intent</p>
+                    <div class="demo-info">
+                        <h3>Use Cases:</h3>
+                        <p>Chatbots • Support routing • Conversation flow</p>
+                    </div>
+                    <textarea id="intent-input" placeholder="Enter user message...">Hi, I'm having issues with my account login. I've tried resetting my password but still can't access my account.</textarea>
+                    <div class="examples">
+                        <button class="example-btn" onclick="setExample('intent', 'Can you tell me about your pricing plans?')">Info Seeking</button>
+                        <button class="example-btn" onclick="setExample('intent', 'I want to upgrade my subscription to premium.')">Purchase Intent</button>
+                    </div>
+                    <button class="button" onclick="runIntent()">Detect</button>
+                    <div id="intent-output" class="output"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SAFETY & COMPLIANCE TAB -->
+        <div id="safety" class="tab-content">
+            <div class="grid">
+                <!-- Content Moderation -->
+                <div class="demo-card">
+                    <div class="category-label">🛡️ Safety</div>
+                    <h2>🚫 Content Moderation</h2>
+                    <p>Flag policy violations</p>
+                    <div class="demo-info">
+                        <h3>Use Cases:</h3>
+                        <p>Jailbreak detection • Policy enforcement • Comment filtering</p>
+                    </div>
+                    <textarea id="moderation-input" placeholder="Enter content to moderate...">This is professional business communication discussing project requirements.</textarea>
+                    <div class="examples">
+                        <button class="example-btn" onclick="setExample('moderation', 'Our new product launch exceeds expectations.')">Safe Example</button>
+                    </div>
+                    <button class="button" onclick="runModeration()">Check</button>
+                    <div id="moderation-output" class="output"></div>
+                </div>
+                
+                <!-- Toxicity Detection -->
+                <div class="demo-card">
+                    <div class="category-label">🛡️ Safety</div>
+                    <h2>☢️ Toxicity Detection</h2>
+                    <p>Identify harmful language</p>
+                    <div class="demo-info">
+                        <h3>Use Cases:</h3>
+                        <p>Abuse prevention • Toxic comment filtering • Safety monitoring</p>
+                    </div>
+                    <textarea id="toxicity-input" placeholder="Enter text to scan...">This is constructive feedback on improving the system architecture.</textarea>
+                    <div class="examples">
+                        <button class="example-btn" onclick="setExample('toxicity', 'Great suggestion for improvement!')">Positive</button>
+                    </div>
+                    <button class="button" onclick="runToxicity()">Scan</button>
+                    <div id="toxicity-output" class="output"></div>
+                </div>
+                
+                <!-- Fraud Detection -->
+                <div class="demo-card">
+                    <div class="category-label">🛡️ Safety</div>
+                    <h2>🔐 Fraud Detection</h2>
+                    <p>Score transaction risk</p>
+                    <div class="demo-info">
+                        <h3>Use Cases:</h3>
+                        <p>Payment fraud • Account security • Anomaly detection</p>
+                    </div>
+                    <textarea id="fraud-input" placeholder="Enter transaction details...">User purchased $49.99 item from familiar store in home city using verified card.</textarea>
+                    <div class="examples">
+                        <button class="example-btn" onclick="setExample('fraud', 'New account, $5000 purchase from foreign country, new payment method.')">Suspicious</button>
+                    </div>
+                    <button class="button" onclick="runFraud()">Score</button>
+                    <div id="fraud-output" class="output"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ROUTING & INTENT TAB -->
+        <div id="routing" class="tab-content">
+            <div class="grid">
+                <!-- Routing -->
+                <div class="demo-card">
+                    <div class="category-label">🔀 Operations</div>
+                    <h2>📍 Smart Routing</h2>
+                    <p>Route to best team/handler</p>
+                    <div class="demo-info">
+                        <h3>Use Cases:</h3>
+                        <p>Support triage • Department routing • Escalation logic</p>
+                    </div>
+                    <textarea id="routing-input" placeholder="Enter message to route...">The API returns a 500 error when processing large datasets with our database integration.</textarea>
+                    <div class="examples">
+                        <button class="example-btn" onclick="setExample('routing', 'I need help updating my billing information.')">Billing</button>
+                        <button class="example-btn" onclick="setExample('routing', 'How do I integrate your API?')">Integration Help</button>
+                    </div>
+                    <button class="button" onclick="runRouting()">Route</button>
+                    <div id="routing-output" class="output"></div>
+                </div>
+                
+                <!-- Priority Scoring -->
+                <div class="demo-card">
+                    <div class="category-label">🔀 Operations</div>
+                    <h2>⚠️ Priority Scoring</h2>
+                    <p>Calculate task urgency</p>
+                    <div class="demo-info">
+                        <h3>Use Cases:</h3>
+                        <p>SLA management • Queue prioritization • Response time SLAs</p>
+                    </div>
+                    <textarea id="priority-input" placeholder="Enter issue description...">Multiple users report system is completely down and unable to access any services.</textarea>
+                    <div class="examples">
+                        <button class="example-btn" onclick="setExample('priority', 'Typo in documentation page.')">Low Priority</button>
+                        <button class="example-btn" onclick="setExample('priority', 'Production database offline, all users affected.')">Critical</button>
+                    </div>
+                    <button class="button" onclick="runPriority()">Score</button>
+                    <div id="priority-output" class="output"></div>
+                </div>
+            </div>
+        </div>
+        
+        <footer>
+            <p>🚀 Powered by Jev (TypeSafe AI) • Real-time streaming • Production-ready</p>
+            <p style="font-size: 0.9em; margin-top: 10px;">Handles 10+ real-world use cases with a single, fast, deterministic AI model</p>
+        </footer>
+    </div>
+    
+    <script>
+        function switchTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            // Remove active from all buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.classList.remove('active');
+            });
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            // Mark button as active
+            event.target.classList.add('active');
+        }
+        
+        async function callJev(prompt, type) {
+            try {
+                const response = await fetch('/api/jev', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt, type })
+                });
+                
+                if (!response.ok) throw new Error('API error');
+                return response;
+            } catch (error) {
+                console.error('Error:', error);
+                throw error;
+            }
+        }
+        
+        async function streamToElement(response, elementId) {
+            const element = document.getElementById(elementId);
+            element.innerHTML = '<span class="loading"></span> Processing...';
+            element.textContent = '';
+            
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+            
+            try {
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+                    
+                    const chunk = decoder.decode(value);
+                    const lines = chunk.split('\n');
+                    
+                    for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                            const data = line.slice(6);
+                            if (data === '[DONE]') {
+                                element.textContent += '\n✓ Complete';
+                            } else if (data.startsWith('[ERROR]')) {
+                                element.innerHTML += '<span style="color: red;">' + data + '</span>';
+                            } else {
+                                element.textContent += data;
+                            }
+                        }
+                    }
+                }
+            } catch (error) {
+                element.textContent = 'Error: ' + error.message;
+            }
+        }
+        
+        async function runEvaluation() {
+            const input = document.getElementById('eval-input').value;
+            if (!input) return alert('Enter text to evaluate');
+            const response = await callJev(input, 'evaluation');
+            await streamToElement(response, 'eval-output');
+        }
+        
+        async function runExtraction() {
+            const input = document.getElementById('extract-input').value;
+            if (!input) return alert('Enter text to extract from');
+            const response = await callJev(input, 'extraction');
+            await streamToElement(response, 'extract-output');
+        }
+        
+        async function runClassification() {
+            const input = document.getElementById('class-input').value;
+            if (!input) return alert('Enter text to classify');
+            const response = await callJev(input, 'classification');
+            await streamToElement(response, 'class-output');
+        }
+        
+        async function runSummarization() {
+            const input = document.getElementById('summary-input').value;
+            if (!input) return alert('Enter text to summarize');
+            const response = await callJev(input, 'summarization');
+            await streamToElement(response, 'summary-output');
+        }
+        
+        async function runSentiment() {
+            const input = document.getElementById('sentiment-input').value;
+            if (!input) return alert('Enter text to analyze');
+            const response = await callJev(input, 'sentiment');
+            await streamToElement(response, 'sentiment-output');
+        }
+        
+        async function runEntity() {
+            const input = document.getElementById('entity-input').value;
+            if (!input) return alert('Enter text for analysis');
+            const response = await callJev(input, 'entity');
+            await streamToElement(response, 'entity-output');
+        }
+        
+        async function runIntent() {
+            const input = document.getElementById('intent-input').value;
+            if (!input) return alert('Enter message to analyze');
+            const response = await callJev(input, 'intent');
+            await streamToElement(response, 'intent-output');
+        }
+        
+        async function runModeration() {
+            const input = document.getElementById('moderation-input').value;
+            if (!input) return alert('Enter content to check');
+            const response = await callJev(input, 'moderation');
+            await streamToElement(response, 'moderation-output');
+        }
+        
+        async function runToxicity() {
+            const input = document.getElementById('toxicity-input').value;
+            if (!input) return alert('Enter text to scan');
+            const response = await callJev(input, 'toxicity');
+            await streamToElement(response, 'toxicity-output');
+        }
+        
+        async function runFraud() {
+            const input = document.getElementById('fraud-input').value;
+            if (!input) return alert('Enter transaction details');
+            const response = await callJev(input, 'fraud');
+            await streamToElement(response, 'fraud-output');
+        }
+        
+        async function runRouting() {
+            const input = document.getElementById('routing-input').value;
+            if (!input) return alert('Enter message to route');
+            const response = await callJev(input, 'routing');
+            await streamToElement(response, 'routing-output');
+        }
+        
+        async function runPriority() {
+            const input = document.getElementById('priority-input').value;
+            if (!input) return alert('Enter issue description');
+            const response = await callJev(input, 'priority');
+            await streamToElement(response, 'priority-output');
+        }
+        
+        function setExample(type, text) {
+            const inputId = type === 'eval' ? 'eval-input' : 
+                           type === 'extract' ? 'extract-input' : 
+                           type === 'class' ? 'class-input' : 
+                           type === 'summary' ? 'summary-input' :
+                           type === 'sentiment' ? 'sentiment-input' :
+                           type === 'entity' ? 'entity-input' :
+                           type === 'intent' ? 'intent-input' :
+                           type === 'moderation' ? 'moderation-input' :
+                           type === 'toxicity' ? 'toxicity-input' :
+                           type === 'fraud' ? 'fraud-input' :
+                           type === 'routing' ? 'routing-input' :
+                           type === 'priority' ? 'priority-input' : null;
+            if (inputId) {
+                document.getElementById(inputId).value = text;
+            }
+        }
+        
+        // Check API status on load
+        fetch('/health')
+            .then(r => r.json())
+            .then(d => {
+                const status = document.getElementById('status');
+                fetch('/api/jev', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: 'test', type: 'evaluation' })
+                })
+                .then(r => r.body.getReader().read())
+                .then(({ value }) => {
+                    const text = new TextDecoder().decode(value);
+                    if (text.includes('[ERROR]')) {
+                        status.className = 'status demo';
+                        status.innerHTML = '⚠️ <strong>Demo Mode</strong> - Simulated responses. Set AI_GATEWAY_API_KEY for real Jev.';
+                    } else {
+                        status.className = 'status live';
+                        status.innerHTML = '✅ <strong>Live Mode</strong> - Using real Jev model!';
+                    }
+                })
+                .catch(() => {
+                    status.className = 'status demo';
+                });
+            });
+    </script>
+</body>
+</html>

@@ -1,0 +1,11 @@
+services:
+  - type: web
+    name: epic-jev
+    env: node
+    plan: free
+    buildCommand: npm ci
+    startCommand: npm start
+    envVars:
+      - key: AI_GATEWAY_API_KEY
+        scope: run
+        value: ${AI_GATEWAY_API_KEY}
