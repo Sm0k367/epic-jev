@@ -1,714 +1,627 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Epic Jev - Do Anything with AI</title>
-    <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
-            min-height: 100vh;
-            padding: 20px;
-        }
-        
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-        
-        header {
-            text-align: center;
-            color: white;
-            margin-bottom: 30px;
-        }
-        
-        h1 {
-            font-size: 2.5em;
-            margin-bottom: 10px;
-            text-shadow: 0 2px 10px rgba(0,0,0,0.2);
-        }
-        
-        .subtitle {
-            font-size: 1.1em;
-            opacity: 0.95;
-        }
-        
-        .tabs {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 30px;
-            flex-wrap: wrap;
-            justify-content: center;
-        }
-        
-        .tab-btn {
-            background: rgba(255,255,255,0.2);
-            color: white;
-            border: 2px solid rgba(255,255,255,0.3);
-            padding: 10px 20px;
-            border-radius: 25px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            backdrop-filter: blur(10px);
-        }
-        
-        .tab-btn:hover {
-            background: rgba(255,255,255,0.3);
-            border-color: rgba(255,255,255,0.5);
-        }
-        
-        .tab-btn.active {
-            background: white;
-            color: #667eea;
-            border-color: white;
-        }
-        
-        .tab-content {
-            display: none;
-        }
-        
-        .tab-content.active {
-            display: grid;
-        }
-        
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
-            gap: 20px;
-        }
-        
-        .demo-card {
-            background: white;
-            border-radius: 12px;
-            padding: 25px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
-            transition: all 0.3s ease;
-        }
-        
-        .demo-card:hover {
-            transform: translateY(-5px);
-            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
-        }
-        
-        .demo-card h2 {
-            color: #667eea;
-            margin-bottom: 10px;
-            font-size: 1.2em;
-        }
-        
-        .demo-card p {
-            color: #666;
-            margin-bottom: 15px;
-            font-size: 0.9em;
-        }
-        
-        .demo-card textarea {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            font-family: monospace;
-            font-size: 0.85em;
-            resize: vertical;
-            min-height: 70px;
-            margin-bottom: 10px;
-        }
-        
-        .button {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: 600;
-            transition: all 0.3s ease;
-            width: 100%;
-        }
-        
-        .button:hover:not(:disabled) {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102,126,234,0.4);
-        }
-        
-        .button:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-        }
-        
-        .output {
-            background: #f5f5f5;
-            border: 1px solid #ddd;
-            border-radius: 6px;
-            padding: 15px;
-            min-height: 80px;
-            margin-top: 15px;
-            font-family: monospace;
-            font-size: 0.85em;
-            line-height: 1.6;
-            max-height: 250px;
-            overflow-y: auto;
-            color: #333;
-            white-space: pre-wrap;
-            word-break: break-word;
-        }
-        
-        .loading {
-            display: inline-block;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-            background: #667eea;
-            animation: pulse 1s infinite;
-        }
-        
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
-        }
-        
-        .status {
-            background: rgba(255,255,255,0.95);
-            border-left: 4px solid #2196f3;
-            padding: 15px;
-            border-radius: 6px;
-            margin-bottom: 25px;
-            color: #0d47a1;
-            backdrop-filter: blur(10px);
-        }
-        
-        .status.demo {
-            border-left-color: #ff9800;
-            color: #e65100;
-        }
-        
-        .status.live {
-            border-left-color: #4caf50;
-            color: #1b5e20;
-        }
-        
-        .demo-info {
-            background: #f0f4ff;
-            border-radius: 8px;
-            padding: 12px;
-            margin-bottom: 12px;
-            border-left: 4px solid #667eea;
-            font-size: 0.85em;
-        }
-        
-        .demo-info h3 {
-            color: #667eea;
-            margin-bottom: 6px;
-            font-size: 0.9em;
-        }
-        
-        .demo-info p {
-            color: #555;
-            font-size: 0.8em;
-            margin: 3px 0;
-        }
-        
-        .examples {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-bottom: 12px;
-        }
-        
-        .example-btn {
-            background: #f0f0f0;
-            border: 1px solid #ddd;
-            padding: 6px 10px;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.75em;
-            transition: all 0.3s ease;
-        }
-        
-        .example-btn:hover {
-            background: #667eea;
-            color: white;
-            border-color: #667eea;
-        }
-        
-        footer {
-            text-align: center;
-            color: rgba(255,255,255,0.9);
-            margin-top: 40px;
-            padding: 20px;
-        }
-        
-        .category-label {
-            display: inline-block;
-            background: rgba(102,126,234,0.2);
-            color: white;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 0.75em;
-            margin-bottom: 10px;
-            font-weight: 600;
-        }
-    </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Epic Jev — Decision Engine + App Builder</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg1: #667eea; --bg2: #764ba2; --bg3: #f093fb;
+    --ink: #1a1a2e; --muted: #6b7280; --line: #e5e7eb;
+    --ok: #10b981; --warn: #f59e0b; --bad: #ef4444; --info: #3b82f6;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: linear-gradient(135deg, var(--bg1) 0%, var(--bg2) 50%, var(--bg3) 100%);
+    background-attachment: fixed;
+    min-height: 100vh;
+    padding: 20px;
+    color: var(--ink);
+  }
+
+  .container { max-width: 1400px; margin: 0 auto; }
+
+  header { text-align: center; color: #fff; margin-bottom: 22px; }
+  h1 { font-size: 2.4em; margin-bottom: 8px; text-shadow: 0 2px 10px rgba(0,0,0,.2); }
+  .subtitle { font-size: 1.05em; opacity: .95; }
+
+  .engine-badge {
+    display: inline-flex; align-items: center; gap: 8px;
+    background: rgba(255,255,255,.18); border: 1px solid rgba(255,255,255,.35);
+    padding: 6px 14px; border-radius: 20px; margin-top: 12px;
+    font-size: .82em; font-weight: 600; backdrop-filter: blur(10px);
+  }
+  .dot { width: 8px; height: 8px; border-radius: 50%; background: var(--warn); }
+  .dot.live { background: var(--ok); box-shadow: 0 0 8px var(--ok); }
+
+  .status {
+    background: rgba(255,255,255,.96); border-left: 4px solid var(--warn);
+    padding: 13px 16px; border-radius: 8px; margin-bottom: 22px;
+    color: #92400e; font-size: .9em; line-height: 1.5;
+  }
+  .status.live { border-left-color: var(--ok); color: #065f46; }
+  .status code { background: rgba(0,0,0,.07); padding: 1px 5px; border-radius: 4px; font-size: .92em; }
+
+  .tabs { display: flex; gap: 8px; margin-bottom: 24px; flex-wrap: wrap; justify-content: center; }
+  .tab-btn {
+    background: rgba(255,255,255,.2); color: #fff; border: 2px solid rgba(255,255,255,.3);
+    padding: 10px 20px; border-radius: 25px; cursor: pointer; font-weight: 600;
+    transition: all .25s ease; backdrop-filter: blur(10px); font-size: .92em;
+  }
+  .tab-btn:hover { background: rgba(255,255,255,.32); border-color: rgba(255,255,255,.55); }
+  .tab-btn.active { background: #fff; color: var(--bg1); border-color: #fff; }
+
+  .tab-content { display: none; }
+  .tab-content.active { display: block; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap: 18px; }
+
+  .card {
+    background: #fff; border-radius: 14px; padding: 22px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.18); transition: transform .25s ease, box-shadow .25s ease;
+  }
+  .card:hover { transform: translateY(-3px); box-shadow: 0 16px 40px rgba(0,0,0,.26); }
+  .card h2 { color: var(--bg1); margin-bottom: 6px; font-size: 1.12em; display: flex; align-items: center; gap: 8px; }
+  .card .blurb { color: var(--muted); margin-bottom: 14px; font-size: .85em; line-height: 1.5; }
+
+  .engine-tag {
+    font-size: .62em; font-weight: 700; letter-spacing: .04em; text-transform: uppercase;
+    padding: 3px 8px; border-radius: 10px; margin-left: auto;
+  }
+  .engine-tag.decision { background: #ede9fe; color: #6d28d9; }
+  .engine-tag.generation { background: #dbeafe; color: #1d4ed8; }
+
+  textarea {
+    width: 100%; padding: 10px 12px; border: 1px solid var(--line); border-radius: 8px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .84em;
+    resize: vertical; min-height: 76px; margin-bottom: 10px; line-height: 1.5; color: var(--ink);
+  }
+  textarea:focus { outline: none; border-color: var(--bg1); box-shadow: 0 0 0 3px rgba(102,126,234,.15); }
+
+  .examples { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .example-btn {
+    background: #f3f4f6; border: 1px solid var(--line); padding: 5px 10px; border-radius: 5px;
+    cursor: pointer; font-size: .72em; transition: all .2s ease; color: #374151;
+  }
+  .example-btn:hover { background: var(--bg1); color: #fff; border-color: var(--bg1); }
+
+  .button {
+    background: linear-gradient(135deg, var(--bg1), var(--bg2)); color: #fff; border: none;
+    padding: 11px 22px; border-radius: 8px; cursor: pointer; font-weight: 600;
+    transition: all .25s ease; width: 100%; font-size: .92em;
+  }
+  .button:hover:not(:disabled) { transform: translateY(-2px); box-shadow: 0 6px 18px rgba(102,126,234,.42); }
+  .button:disabled { opacity: .55; cursor: not-allowed; }
+  .button.ghost { background: #f3f4f6; color: #374151; border: 1px solid var(--line); }
+  .button.ghost:hover:not(:disabled) { box-shadow: 0 4px 12px rgba(0,0,0,.1); }
+
+  .results { margin-top: 16px; display: none; }
+  .results.show { display: block; }
+
+  .meta-row {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px;
+    font-size: .7em; color: var(--muted);
+  }
+  .chip { background: #f3f4f6; border: 1px solid var(--line); padding: 3px 9px; border-radius: 10px; }
+  .chip.sim { background: #fef3c7; border-color: #fde68a; color: #92400e; }
+
+  .answer { margin-bottom: 14px; }
+  .answer:last-child { margin-bottom: 0; }
+  .answer-q { font-size: .76em; color: var(--muted); margin-bottom: 5px; line-height: 1.4; }
+  .answer-head { display: flex; align-items: baseline; gap: 8px; margin-bottom: 6px; }
+  .answer-label { font-weight: 700; font-size: .95em; color: var(--ink); }
+  .answer-conf { font-size: .74em; color: var(--muted); margin-left: auto; font-variant-numeric: tabular-nums; }
+
+  .bars { display: flex; flex-direction: column; gap: 4px; }
+  .bar-row { display: flex; align-items: center; gap: 8px; font-size: .72em; }
+  .bar-name { width: 108px; flex-shrink: 0; color: #4b5563; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .bar-track { flex: 1; height: 7px; background: #f3f4f6; border-radius: 4px; overflow: hidden; }
+  .bar-fill { height: 100%; background: linear-gradient(90deg, var(--bg1), var(--bg2)); border-radius: 4px; transition: width .5s cubic-bezier(.4,0,.2,1); }
+  .bar-row.top .bar-fill { background: linear-gradient(90deg, var(--ok), #059669); }
+  .bar-val { width: 42px; text-align: right; color: var(--muted); font-variant-numeric: tabular-nums; flex-shrink: 0; }
+
+  .bool-track { display: flex; align-items: center; gap: 10px; }
+  .bool-bar { flex: 1; height: 9px; background: #fee2e2; border-radius: 5px; overflow: hidden; position: relative; }
+  .bool-fill { height: 100%; background: linear-gradient(90deg, var(--ok), #059669); border-radius: 5px; transition: width .5s cubic-bezier(.4,0,.2,1); }
+  .bool-ends { display: flex; justify-content: space-between; font-size: .66em; color: var(--muted); margin-top: 3px; }
+
+  .prose {
+    background: #f9fafb; border: 1px solid var(--line); border-radius: 8px; padding: 14px;
+    font-size: .84em; line-height: 1.65; white-space: pre-wrap; word-break: break-word;
+    max-height: 340px; overflow-y: auto;
+  }
+  .prose.json { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78em; }
+
+  .spinner { display: inline-block; width: 13px; height: 13px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; vertical-align: -2px; margin-right: 7px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .err { background: #fef2f2; border: 1px solid #fecaca; color: #991b1b; padding: 11px; border-radius: 8px; font-size: .82em; margin-top: 12px; }
+
+  /* ── App Builder ── */
+  .builder { max-width: 1100px; margin: 0 auto; }
+  .builder-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-top: 18px; }
+  @media (max-width: 980px) { .builder-grid { grid-template-columns: 1fr; } }
+
+  .plan-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; margin-top: 14px; }
+  .plan-item { background: #f9fafb; border: 1px solid var(--line); border-radius: 8px; padding: 10px 12px; }
+  .plan-k { font-size: .66em; text-transform: uppercase; letter-spacing: .05em; color: var(--muted); margin-bottom: 3px; }
+  .plan-v { font-size: .88em; font-weight: 650; color: var(--ink); }
+  .plan-v.risk-high { color: var(--bad); }
+  .plan-v.risk-medium { color: var(--warn); }
+  .plan-v.risk-none, .plan-v.risk-low { color: var(--ok); }
+
+  .code-box {
+    background: #0f172a; color: #e2e8f0; border-radius: 10px; padding: 14px;
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .74em;
+    line-height: 1.55; max-height: 300px; overflow-y: auto; white-space: pre-wrap; word-break: break-word;
+  }
+  .code-box .caret { display: inline-block; width: 7px; height: 13px; background: #60a5fa; animation: blink 1s step-end infinite; vertical-align: -2px; }
+  @keyframes blink { 50% { opacity: 0; } }
+
+  .preview-frame {
+    width: 100%; height: 520px; border: 1px solid var(--line); border-radius: 10px;
+    background: #fff; display: block;
+  }
+  .preview-empty {
+    height: 520px; border: 2px dashed var(--line); border-radius: 10px;
+    display: grid; place-items: center; color: var(--muted); font-size: .88em; text-align: center; padding: 20px;
+  }
+  .btn-row { display: flex; gap: 10px; margin-top: 12px; }
+  .btn-row .button { width: auto; flex: 1; }
+
+  .security-note {
+    background: #f0fdf4; border: 1px solid #bbf7d0; border-radius: 10px;
+    padding: 14px 16px; margin-top: 18px; font-size: .8em; color: #14532d; line-height: 1.6;
+  }
+  .security-note strong { color: #166534; }
+  .security-note ul { margin: 6px 0 0 18px; }
+
+  footer { text-align: center; color: rgba(255,255,255,.92); margin-top: 36px; padding: 18px; font-size: .85em; line-height: 1.7; }
+  footer a { color: #fff; }
+</style>
 </head>
 <body>
-    <div class="container">
-        <header>
-            <h1>🚀 Epic Jev - Do Anything</h1>
-            <p class="subtitle">AI for Every Task • Real-time Streaming • Enterprise-Ready</p>
-        </header>
-        
-        <div id="status" class="status demo">
-            ⚠️ <strong>Demo Mode</strong> - Simulated responses (no API key). Set AI_GATEWAY_API_KEY for real Jev.
-        </div>
-        
-        <!-- Tabs -->
-        <div class="tabs">
-            <button class="tab-btn active" onclick="switchTab('core')">Core Tasks</button>
-            <button class="tab-btn" onclick="switchTab('content')">Content Analysis</button>
-            <button class="tab-btn" onclick="switchTab('safety')">Safety & Compliance</button>
-            <button class="tab-btn" onclick="switchTab('routing')">Routing & Intent</button>
-        </div>
+<div class="container">
+  <header>
+    <h1>🚀 Epic Jev</h1>
+    <p class="subtitle">Decision Engine + App Builder — probabilities, not guesses</p>
+    <div class="engine-badge"><span class="dot" id="engine-dot"></span><span id="engine-label">loading…</span></div>
+  </header>
 
-        <!-- CORE TASKS TAB -->
-        <div id="core" class="tab-content active">
-            <div class="grid">
-                <!-- Evaluation -->
-                <div class="demo-card">
-                    <div class="category-label">🎯 Core</div>
-                    <h2>📋 Text Evaluation</h2>
-                    <p>Judge accuracy and validity of statements</p>
-                    <div class="demo-info">
-                        <h3>Use Cases:</h3>
-                        <p>Fact-checking • Claim verification • Statement validation</p>
-                    </div>
-                    <textarea id="eval-input" placeholder="Enter a statement to evaluate...">Machine learning is a subset of artificial intelligence.</textarea>
-                    <div class="examples">
-                        <button class="example-btn" onclick="setExample('eval', 'Is Python the most popular programming language?')">Example 1</button>
-                        <button class="example-btn" onclick="setExample('eval', 'The Earth revolves around the Sun.')">Example 2</button>
-                    </div>
-                    <button class="button" onclick="runEvaluation()">Evaluate</button>
-                    <div id="eval-output" class="output"></div>
-                </div>
-                
-                <!-- Extraction -->
-                <div class="demo-card">
-                    <div class="category-label">🎯 Core</div>
-                    <h2>🔍 Data Extraction</h2>
-                    <p>Pull key concepts and information</p>
-                    <div class="demo-info">
-                        <h3>Use Cases:</h3>
-                        <p>Information extraction • Entity detection • Keyword mining</p>
-                    </div>
-                    <textarea id="extract-input" placeholder="Enter text to extract from...">Streaming delivers tokens in real-time, enabling responsive UIs with progressive rendering.</textarea>
-                    <div class="examples">
-                        <button class="example-btn" onclick="setExample('extract', 'Cloud computing provides scalable infrastructure.')">Example 1</button>
-                        <button class="example-btn" onclick="setExample('extract', 'Machine learning algorithms learn patterns from data.')">Example 2</button>
-                    </div>
-                    <button class="button" onclick="runExtraction()">Extract</button>
-                    <div id="extract-output" class="output"></div>
-                </div>
-                
-                <!-- Classification -->
-                <div class="demo-card">
-                    <div class="category-label">🎯 Core</div>
-                    <h2>🏷️ Classification</h2>
-                    <p>Categorize and label content</p>
-                    <div class="demo-info">
-                        <h3>Use Cases:</h3>
-                        <p>Sentiment analysis • Category assignment • Type detection</p>
-                    </div>
-                    <textarea id="class-input" placeholder="Enter text to classify...">The KMS implementation is elegant and performant.</textarea>
-                    <div class="examples">
-                        <button class="example-btn" onclick="setExample('class', 'This product is terrible and useless.')">Negative</button>
-                        <button class="example-btn" onclick="setExample('class', 'Amazing experience, highly recommended!')">Positive</button>
-                    </div>
-                    <button class="button" onclick="runClassification()">Classify</button>
-                    <div id="class-output" class="output"></div>
-                </div>
-                
-                <!-- Summarization -->
-                <div class="demo-card">
-                    <div class="category-label">🎯 Core</div>
-                    <h2>📝 Summarization</h2>
-                    <p>Compress content to key points</p>
-                    <div class="demo-info">
-                        <h3>Use Cases:</h3>
-                        <p>Content summary • Abstract generation • Document compression</p>
-                    </div>
-                    <textarea id="summary-input" placeholder="Enter text to summarize...">Jev excels at structured extraction, evaluation, and classification with 32K context and deterministic outputs, ideal for enterprise applications.</textarea>
-                    <div class="examples">
-                        <button class="example-btn" onclick="setExample('summary', 'AI is transforming every industry by automating tasks and improving efficiency.')">Example 1</button>
-                        <button class="example-btn" onclick="setExample('summary', 'The internet revolutionized communication, commerce, and information access.')">Example 2</button>
-                    </div>
-                    <button class="button" onclick="runSummarization()">Summarize</button>
-                    <div id="summary-output" class="output"></div>
-                </div>
-            </div>
-        </div>
+  <div id="status" class="status">Checking configuration…</div>
 
-        <!-- CONTENT ANALYSIS TAB -->
-        <div id="content" class="tab-content">
-            <div class="grid">
-                <!-- Sentiment -->
-                <div class="demo-card">
-                    <div class="category-label">📊 Analysis</div>
-                    <h2>😊 Sentiment Analysis</h2>
-                    <p>Detect emotion and tone</p>
-                    <div class="demo-info">
-                        <h3>Use Cases:</h3>
-                        <p>Customer feedback • Review analysis • Brand monitoring</p>
-                    </div>
-                    <textarea id="sentiment-input" placeholder="Enter text to analyze...">I absolutely love this product! The quality is exceptional and customer service was amazing.</textarea>
-                    <div class="examples">
-                        <button class="example-btn" onclick="setExample('sentiment', 'Disappointed with the service.')">Negative</button>
-                        <button class="example-btn" onclick="setExample('sentiment', 'Great product, works perfectly!')">Positive</button>
-                    </div>
-                    <button class="button" onclick="runSentiment()">Analyze</button>
-                    <div id="sentiment-output" class="output"></div>
-                </div>
-                
-                <!-- Entity Recognition -->
-                <div class="demo-card">
-                    <div class="category-label">📊 Analysis</div>
-                    <h2>🏢 Entity Recognition</h2>
-                    <p>Identify people, places, organizations</p>
-                    <div class="demo-info">
-                        <h3>Use Cases:</h3>
-                        <p>NER • Knowledge extraction • Reference identification</p>
-                    </div>
-                    <textarea id="entity-input" placeholder="Enter text for entity detection...">Sundar Pichai leads Google from Mountain View, driving innovation in cloud computing and AI.</textarea>
-                    <div class="examples">
-                        <button class="example-btn" onclick="setExample('entity', 'Apple CEO Tim Cook announced new products in Cupertino.')">Example 1</button>
-                        <button class="example-btn" onclick="setExample('entity', 'Microsoft partners with OpenAI in Seattle.')">Example 2</button>
-                    </div>
-                    <button class="button" onclick="runEntity()">Recognize</button>
-                    <div id="entity-output" class="output"></div>
-                </div>
-                
-                <!-- Intent Detection -->
-                <div class="demo-card">
-                    <div class="category-label">📊 Analysis</div>
-                    <h2>🎯 Intent Detection</h2>
-                    <p>Understand user intent</p>
-                    <div class="demo-info">
-                        <h3>Use Cases:</h3>
-                        <p>Chatbots • Support routing • Conversation flow</p>
-                    </div>
-                    <textarea id="intent-input" placeholder="Enter user message...">Hi, I'm having issues with my account login. I've tried resetting my password but still can't access my account.</textarea>
-                    <div class="examples">
-                        <button class="example-btn" onclick="setExample('intent', 'Can you tell me about your pricing plans?')">Info Seeking</button>
-                        <button class="example-btn" onclick="setExample('intent', 'I want to upgrade my subscription to premium.')">Purchase Intent</button>
-                    </div>
-                    <button class="button" onclick="runIntent()">Detect</button>
-                    <div id="intent-output" class="output"></div>
-                </div>
-            </div>
-        </div>
+  <div class="tabs" id="tabs"></div>
 
-        <!-- SAFETY & COMPLIANCE TAB -->
-        <div id="safety" class="tab-content">
-            <div class="grid">
-                <!-- Content Moderation -->
-                <div class="demo-card">
-                    <div class="category-label">🛡️ Safety</div>
-                    <h2>🚫 Content Moderation</h2>
-                    <p>Flag policy violations</p>
-                    <div class="demo-info">
-                        <h3>Use Cases:</h3>
-                        <p>Jailbreak detection • Policy enforcement • Comment filtering</p>
-                    </div>
-                    <textarea id="moderation-input" placeholder="Enter content to moderate...">This is professional business communication discussing project requirements.</textarea>
-                    <div class="examples">
-                        <button class="example-btn" onclick="setExample('moderation', 'Our new product launch exceeds expectations.')">Safe Example</button>
-                    </div>
-                    <button class="button" onclick="runModeration()">Check</button>
-                    <div id="moderation-output" class="output"></div>
-                </div>
-                
-                <!-- Toxicity Detection -->
-                <div class="demo-card">
-                    <div class="category-label">🛡️ Safety</div>
-                    <h2>☢️ Toxicity Detection</h2>
-                    <p>Identify harmful language</p>
-                    <div class="demo-info">
-                        <h3>Use Cases:</h3>
-                        <p>Abuse prevention • Toxic comment filtering • Safety monitoring</p>
-                    </div>
-                    <textarea id="toxicity-input" placeholder="Enter text to scan...">This is constructive feedback on improving the system architecture.</textarea>
-                    <div class="examples">
-                        <button class="example-btn" onclick="setExample('toxicity', 'Great suggestion for improvement!')">Positive</button>
-                    </div>
-                    <button class="button" onclick="runToxicity()">Scan</button>
-                    <div id="toxicity-output" class="output"></div>
-                </div>
-                
-                <!-- Fraud Detection -->
-                <div class="demo-card">
-                    <div class="category-label">🛡️ Safety</div>
-                    <h2>🔐 Fraud Detection</h2>
-                    <p>Score transaction risk</p>
-                    <div class="demo-info">
-                        <h3>Use Cases:</h3>
-                        <p>Payment fraud • Account security • Anomaly detection</p>
-                    </div>
-                    <textarea id="fraud-input" placeholder="Enter transaction details...">User purchased $49.99 item from familiar store in home city using verified card.</textarea>
-                    <div class="examples">
-                        <button class="example-btn" onclick="setExample('fraud', 'New account, $5000 purchase from foreign country, new payment method.')">Suspicious</button>
-                    </div>
-                    <button class="button" onclick="runFraud()">Score</button>
-                    <div id="fraud-output" class="output"></div>
-                </div>
-            </div>
-        </div>
+  <div id="panels"></div>
 
-        <!-- ROUTING & INTENT TAB -->
-        <div id="routing" class="tab-content">
-            <div class="grid">
-                <!-- Routing -->
-                <div class="demo-card">
-                    <div class="category-label">🔀 Operations</div>
-                    <h2>📍 Smart Routing</h2>
-                    <p>Route to best team/handler</p>
-                    <div class="demo-info">
-                        <h3>Use Cases:</h3>
-                        <p>Support triage • Department routing • Escalation logic</p>
-                    </div>
-                    <textarea id="routing-input" placeholder="Enter message to route...">The API returns a 500 error when processing large datasets with our database integration.</textarea>
-                    <div class="examples">
-                        <button class="example-btn" onclick="setExample('routing', 'I need help updating my billing information.')">Billing</button>
-                        <button class="example-btn" onclick="setExample('routing', 'How do I integrate your API?')">Integration Help</button>
-                    </div>
-                    <button class="button" onclick="runRouting()">Route</button>
-                    <div id="routing-output" class="output"></div>
-                </div>
-                
-                <!-- Priority Scoring -->
-                <div class="demo-card">
-                    <div class="category-label">🔀 Operations</div>
-                    <h2>⚠️ Priority Scoring</h2>
-                    <p>Calculate task urgency</p>
-                    <div class="demo-info">
-                        <h3>Use Cases:</h3>
-                        <p>SLA management • Queue prioritization • Response time SLAs</p>
-                    </div>
-                    <textarea id="priority-input" placeholder="Enter issue description...">Multiple users report system is completely down and unable to access any services.</textarea>
-                    <div class="examples">
-                        <button class="example-btn" onclick="setExample('priority', 'Typo in documentation page.')">Low Priority</button>
-                        <button class="example-btn" onclick="setExample('priority', 'Production database offline, all users affected.')">Critical</button>
-                    </div>
-                    <button class="button" onclick="runPriority()">Score</button>
-                    <div id="priority-output" class="output"></div>
-                </div>
-            </div>
-        </div>
-        
-        <footer>
-            <p>🚀 Powered by Jev (TypeSafe AI) • Real-time streaming • Production-ready</p>
-            <p style="font-size: 0.9em; margin-top: 10px;">Handles 10+ real-world use cases with a single, fast, deterministic AI model</p>
-        </footer>
+  <footer>
+    <div><strong>Epic Jev</strong> · Clef / Jev decision models via Cloudflare Workers AI + Vercel AI Gateway</div>
+    <div>Decision models return <em>probabilities</em> — no free-form text, no output parsing.</div>
+    <div><a href="https://github.com/Sm0k367/epic-jev">GitHub</a> · <a href="/api/capabilities">API</a> · <a href="/health">Health</a></div>
+  </footer>
+</div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const pct = (n) => (Number(n) * 100).toFixed(1) + '%';
+
+let CAPS = [];
+let STATUS = {};
+let PREVIEW_HTML = null;
+
+// ── Boot ────────────────────────────────────────────────────────────────────
+
+async function boot() {
+  try {
+    const [capsRes, statusRes] = await Promise.all([
+      fetch('/api/capabilities').then(r => r.json()),
+      fetch('/api/status').then(r => r.json()),
+    ]);
+    CAPS = capsRes;
+    STATUS = statusRes;
+  } catch (e) {
+    $('status').textContent = 'Failed to load capabilities: ' + e.message;
+    return;
+  }
+  renderStatus();
+  renderTabs();
+  renderPanels();
+}
+
+function renderStatus() {
+  const live = STATUS.engine !== 'demo';
+  $('engine-dot').className = 'dot' + (live ? ' live' : '');
+  $('engine-label').textContent = live
+    ? `Decision engine: ${STATUS.engine}`
+    : 'Demo mode — simulated decisions';
+
+  const el = $('status');
+  el.className = 'status' + (live ? ' live' : '');
+
+  if (live) {
+    el.innerHTML = `✅ <strong>Live</strong> — decisions from <code>${esc(STATUS.engine)}</code>` +
+      (STATUS.generation ? `, generation from <code>${esc(STATUS.generationModel)}</code>, app builder on <code>${esc(STATUS.codeModel)}</code>.` : '. Generation unavailable — add <code>AI_GATEWAY_API_KEY</code>.');
+  } else {
+    const bits = [];
+    if (!STATUS.cloudflare) bits.push('<code>CLOUDFLARE_ACCOUNT_ID</code> + <code>CLOUDFLARE_AUTH_TOKEN</code> for <strong>Clef</strong> (38ms, multimodal)');
+    if (!STATUS.gateway) bits.push('<code>AI_GATEWAY_API_KEY</code> for <strong>Jev</strong> decisions + text generation');
+    el.innerHTML = `⚠️ <strong>Demo mode</strong> — decisions are simulated locally (deterministic, keyword-driven), and generated apps are a built-in fallback. ` +
+      `Add ${bits.join(' or ')} to go live. Everything below works either way.`;
+  }
+}
+
+function renderTabs() {
+  const tabs = STATUS.tabs || {};
+  const order = ['core', 'content', 'safety', 'ops', 'builder'];
+  $('tabs').innerHTML = order
+    .filter(k => tabs[k])
+    .map((k, i) => `<button class="tab-btn${i === 0 ? ' active' : ''}" data-tab="${k}" onclick="switchTab('${k}')">${k === 'builder' ? '🛠️ ' : ''}${esc(tabs[k])}</button>`)
+    .join('');
+}
+
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.toggle('active', b.dataset.tab === name));
+  document.querySelectorAll('.tab-content').forEach(p => p.classList.toggle('active', p.id === 'panel-' + name));
+}
+
+function renderPanels() {
+  const tabs = STATUS.tabs || {};
+  const order = ['core', 'content', 'safety', 'ops', 'builder'];
+  const panels = $('panels');
+
+  for (const tab of order) {
+    const div = document.createElement('div');
+    div.className = 'tab-content' + (tab === 'core' ? ' active' : '');
+    div.id = 'panel-' + tab;
+
+    if (tab === 'builder') {
+      div.innerHTML = builderHtml();
+    } else {
+      const caps = CAPS.filter(c => c.tab === tab);
+      div.innerHTML = `<div class="grid">${caps.map(cardHtml).join('')}</div>`;
+    }
+    panels.appendChild(div);
+  }
+}
+
+// ── Capability cards ────────────────────────────────────────────────────────
+
+function cardHtml(cap) {
+  return `
+  <div class="card">
+    <h2>${cap.icon} ${esc(cap.label)}
+      <span class="engine-tag ${cap.engine}">${cap.engine === 'decision' ? 'decision' : 'generation'}</span>
+    </h2>
+    <p class="blurb">${esc(cap.blurb)}</p>
+    <textarea id="in-${cap.id}" placeholder="Enter text…">${esc(cap.example)}</textarea>
+    <div class="examples">
+      <button class="example-btn" onclick="useExample('${cap.id}')">↺ Reset example</button>
+      <button class="example-btn" onclick="clearInput('${cap.id}')">Clear</button>
     </div>
-    
-    <script>
-        function switchTab(tabName) {
-            // Hide all tabs
-            document.querySelectorAll('.tab-content').forEach(tab => {
-                tab.classList.remove('active');
-            });
-            // Remove active from all buttons
-            document.querySelectorAll('.tab-btn').forEach(btn => {
-                btn.classList.remove('active');
-            });
-            // Show selected tab
-            document.getElementById(tabName).classList.add('active');
-            // Mark button as active
-            event.target.classList.add('active');
+    <button class="button" id="btn-${cap.id}" onclick="run('${cap.id}')">
+      ${cap.engine === 'decision' ? 'Decide' : 'Generate'}
+    </button>
+    <div class="results" id="res-${cap.id}"></div>
+  </div>`;
+}
+
+function useExample(id) {
+  const cap = CAPS.find(c => c.id === id);
+  if (cap) $('in-' + id).value = cap.example;
+}
+function clearInput(id) { $('in-' + id).value = ''; $('in-' + id).focus(); }
+
+async function run(id) {
+  const cap = CAPS.find(c => c.id === id);
+  const text = $('in-' + id).value.trim();
+  const res = $('res-' + id);
+  const btn = $('btn-' + id);
+
+  if (!text) { res.className = 'results show'; res.innerHTML = '<div class="err">Enter some text first.</div>'; return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Working…';
+  res.className = 'results show';
+  res.innerHTML = '<div class="prose">Running…</div>';
+
+  const endpoint = cap.engine === 'decision' ? '/api/decide' : '/api/generate';
+  try {
+    const r = await fetch(endpoint, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ capability: id, text }),
+    });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
+    res.innerHTML = cap.engine === 'decision' ? renderDecision(data) : renderGeneration(data, cap);
+  } catch (e) {
+    res.innerHTML = `<div class="err">${esc(e.message)}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = cap.engine === 'decision' ? 'Decide' : 'Generate';
+  }
+}
+
+function metaRow(d) {
+  return `<div class="meta-row">
+    <span class="chip${d.simulated ? ' sim' : ''}">${d.simulated ? '⚠ simulated' : esc(d.engine || d.model || '')}</span>
+    ${d.latencyMs != null ? `<span class="chip">${d.latencyMs} ms</span>` : ''}
+    ${d.usage?.input_tokens ? `<span class="chip">${d.usage.input_tokens} tok in</span>` : ''}
+  </div>`;
+}
+
+function renderDecision(d) {
+  const parts = [metaRow(d)];
+  for (const [qid, a] of Object.entries(d.answers || {})) {
+    const q = esc(a.question || qid);
+    if (a.type === 'choice') {
+      const probs = a.probabilities || {};
+      const entries = Object.entries(probs).sort((x, y) => y[1] - x[1]);
+      parts.push(`<div class="answer">
+        <div class="answer-q">${q}</div>
+        <div class="answer-head"><span class="answer-label">${esc(a.choice)}</span>
+          <span class="answer-conf">confidence ${pct(a.confidence)}</span></div>
+        <div class="bars">${entries.map(([k, v], i) => `
+          <div class="bar-row${i === 0 ? ' top' : ''}">
+            <span class="bar-name" title="${esc(k)}">${esc(k)}</span>
+            <span class="bar-track"><span class="bar-fill" style="width:${(v * 100).toFixed(1)}%"></span></span>
+            <span class="bar-val">${pct(v)}</span>
+          </div>`).join('')}
+        </div></div>`);
+    } else if (a.type === 'score') {
+      const legend = a.legend || {};
+      const probs = a.probabilities || {};
+      const keys = Object.keys(legend).sort((x, y) => Number(x) - Number(y));
+      const idx = Math.round(a.score ?? 0);
+      parts.push(`<div class="answer">
+        <div class="answer-q">${q}</div>
+        <div class="answer-head"><span class="answer-label">${esc(legend[String(idx)] || 'Level ' + idx)}</span>
+          <span class="answer-conf">score ${(a.score ?? 0).toFixed(2)} / ${Math.max(0, keys.length - 1)}</span></div>
+        <div class="bars">${keys.map(k => {
+          const v = probs[k] ?? 0;
+          return `<div class="bar-row${Number(k) === idx ? ' top' : ''}">
+            <span class="bar-name" title="${esc(legend[k])}">${esc(legend[k])}</span>
+            <span class="bar-track"><span class="bar-fill" style="width:${(v * 100).toFixed(1)}%"></span></span>
+            <span class="bar-val">${pct(v)}</span>
+          </div>`;
+        }).join('')}
+        </div></div>`);
+    } else if (a.type === 'noul' || a.type === 'boolean') {
+      const p = a.noul ?? a.probability ?? 0;
+      parts.push(`<div class="answer">
+        <div class="answer-q">${q}</div>
+        <div class="answer-head"><span class="answer-label">${p >= 0.5 ? 'YES' : 'NO'}</span>
+          <span class="answer-conf">P(true) = ${pct(p)}</span></div>
+        <div class="bool-track"><div style="flex:1">
+          <div class="bool-bar"><div class="bool-fill" style="width:${(p * 100).toFixed(1)}%"></div></div>
+          <div class="bool-ends"><span>no</span><span>yes</span></div>
+        </div></div></div>`);
+    }
+  }
+  return parts.join('');
+}
+
+function renderGeneration(d, cap) {
+  const body = cap.id === 'extraction' && d.json
+    ? `<div class="prose json">${esc(JSON.stringify(d.json, null, 2))}</div>`
+    : `<div class="prose">${esc(d.text)}</div>`;
+  return metaRow(d) + body;
+}
+
+// ── App Builder ─────────────────────────────────────────────────────────────
+
+function builderHtml() {
+  return `
+  <div class="builder">
+    <div class="card">
+      <h2>🛠️ App Builder <span class="engine-tag decision">clef plans</span><span class="engine-tag generation">llm writes</span></h2>
+      <p class="blurb">Describe an app. A <strong>decision model</strong> classifies it (type, complexity, risk, style) in one forward pass, then a <strong>code model</strong> writes a complete single-file HTML app. Preview it live in a sandboxed frame, or download it.</p>
+      <textarea id="builder-input" style="min-height:110px" placeholder="Describe the app you want…">A dark-themed habit tracker where I can add daily habits, check them off, and see a 7-day streak grid. Data persists between visits.</textarea>
+      <div class="examples">
+        <button class="example-btn" onclick="setBuilder('A pomodoro timer with adjustable work/break lengths, a circular progress ring, and session history.')">⏱ Pomodoro timer</button>
+        <button class="example-btn" onclick="setBuilder('A dark-themed habit tracker where I can add daily habits, check them off, and see a 7-day streak grid. Data persists between visits.')">✅ Habit tracker</button>
+        <button class="example-btn" onclick="setBuilder('A JSON formatter and validator with a tree view, syntax highlighting, and copy-to-clipboard.')">🧪 JSON formatter</button>
+        <button class="example-btn" onclick="setBuilder('A snake game with score, speed levels, and keyboard + touch controls.')">🎮 Snake game</button>
+        <button class="example-btn" onclick="setBuilder('A unit converter for length, weight, and temperature with a clean minimal design.')">📐 Unit converter</button>
+        <button class="example-btn" onclick="setBuilder('A landing page for a fictional coffee roastery with a playful warm palette and menu section.')">☕ Landing page</button>
+      </div>
+      <button class="button" id="builder-btn" onclick="buildApp()">Build app</button>
+      <div id="builder-plan"></div>
+      <div id="builder-error"></div>
+    </div>
+
+    <div class="builder-grid">
+      <div class="card">
+        <h2>📜 Generated code</h2>
+        <div class="code-box" id="builder-code">Waiting for a build…</div>
+        <div class="btn-row">
+          <button class="button ghost" id="dl-btn" onclick="downloadApp()" disabled>⬇ Download .html</button>
+          <button class="button ghost" id="copy-btn" onclick="copyCode()" disabled>⧉ Copy code</button>
+        </div>
+      </div>
+      <div class="card">
+        <h2>👁 Live preview</h2>
+        <div id="builder-preview"><div class="preview-empty">Sandboxed preview appears here.<br><br>Runs with no same-origin access and no network.</div></div>
+      </div>
+    </div>
+
+    <div class="security-note">
+      <strong>How generated code is contained</strong>
+      <ul>
+        <li>Never executed server-side — no <code>eval</code>, no <code>vm</code>, no child processes.</li>
+        <li>Preview renders via <code>iframe srcdoc</code> with <code>sandbox="allow-scripts"</code> and <strong>no</strong> <code>allow-same-origin</code>, so the app gets an opaque origin: it cannot read this page's cookies or storage.</li>
+        <li>A <code>Content-Security-Policy</code> of <code>default-src 'none'</code> is injected into the generated document — no network access at all, even if sanitising missed something.</li>
+        <li>Output is stripped of frame-escape vectors (<code>window.open</code>, <code>top.location</code>, <code>document.cookie</code>, external <code>src</code>) and capped at 200 KiB.</li>
+        <li>The decision model blocks requests it classifies as high-risk before any code is written.</li>
+        <li>No server-side storage: the app is streamed to your browser and rendered locally, so nothing you build is persisted on our servers.</li>
+      </ul>
+    </div>
+  </div>`;
+}
+
+function setBuilder(text) { $('builder-input').value = text; }
+
+async function buildApp() {
+  const description = $('builder-input').value.trim();
+  const btn = $('builder-btn');
+  const planEl = $('builder-plan');
+  const errEl = $('builder-error');
+  const codeEl = $('builder-code');
+
+  if (!description) { errEl.innerHTML = '<div class="err">Describe the app you want first.</div>'; return; }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Planning…';
+  errEl.innerHTML = '';
+  planEl.innerHTML = '';
+  codeEl.innerHTML = '<span class="caret"></span>';
+  $('dl-btn').disabled = true;
+  $('copy-btn').disabled = true;
+  PREVIEW_HTML = null;
+  $('builder-preview').innerHTML = '<div class="preview-empty">Building…</div>';
+
+  let code = '';
+  let blocked = false;
+  let finished = false;
+
+  try {
+    const res = await fetch('/api/builder/build', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ description }),
+    });
+    if (!res.ok) {
+      const e = await res.json().catch(() => ({}));
+      throw new Error(e.error || `HTTP ${res.status}`);
+    }
+
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, { stream: true });
+
+      const events = buf.split('\n\n');
+      buf = events.pop();
+
+      for (const raw of events) {
+        if (!raw.trim()) continue;
+        const evLine = raw.match(/^event: (.+)$/m);
+        const dataLine = raw.match(/^data: ([\s\S]+)$/m);
+        if (!dataLine) continue;
+        const type = evLine ? evLine[1].trim() : 'message';
+        let payload;
+        try { payload = JSON.parse(dataLine[1]); } catch { continue; }
+
+        if (type === 'plan') {
+          planEl.innerHTML = renderPlan(payload.plan);
+          btn.innerHTML = '<span class="spinner"></span>Generating…';
+        } else if (type === 'chunk') {
+          code += payload.text;
+          codeEl.innerHTML = esc(code) + '<span class="caret"></span>';
+          codeEl.scrollTop = codeEl.scrollHeight;
+        } else if (type === 'done') {
+          finished = true;
+        } else if (type === 'app') {
+          PREVIEW_HTML = payload.html;
+          showPreview(payload.html);
+          $('dl-btn').disabled = false;
+          $('copy-btn').disabled = false;
+        } else if (type === 'blocked') {
+          blocked = true;
+          errEl.innerHTML = `<div class="err">🚫 ${esc(payload.message)}</div>`;
+        } else if (type === 'error') {
+          errEl.innerHTML = `<div class="err">${esc(payload.message)}</div>`;
         }
-        
-        async function callJev(prompt, type) {
-            try {
-                const response = await fetch('/api/jev', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt, type })
-                });
-                
-                if (!response.ok) throw new Error('API error');
-                return response;
-            } catch (error) {
-                console.error('Error:', error);
-                throw error;
-            }
-        }
-        
-        async function streamToElement(response, elementId) {
-            const element = document.getElementById(elementId);
-            element.innerHTML = '<span class="loading"></span> Processing...';
-            element.textContent = '';
-            
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder();
-            
-            try {
-                while (true) {
-                    const { done, value } = await reader.read();
-                    if (done) break;
-                    
-                    const chunk = decoder.decode(value);
-                    const lines = chunk.split('\n');
-                    
-                    for (const line of lines) {
-                        if (line.startsWith('data: ')) {
-                            const data = line.slice(6);
-                            if (data === '[DONE]') {
-                                element.textContent += '\n✓ Complete';
-                            } else if (data.startsWith('[ERROR]')) {
-                                element.innerHTML += '<span style="color: red;">' + data + '</span>';
-                            } else {
-                                element.textContent += data;
-                            }
-                        }
-                    }
-                }
-            } catch (error) {
-                element.textContent = 'Error: ' + error.message;
-            }
-        }
-        
-        async function runEvaluation() {
-            const input = document.getElementById('eval-input').value;
-            if (!input) return alert('Enter text to evaluate');
-            const response = await callJev(input, 'evaluation');
-            await streamToElement(response, 'eval-output');
-        }
-        
-        async function runExtraction() {
-            const input = document.getElementById('extract-input').value;
-            if (!input) return alert('Enter text to extract from');
-            const response = await callJev(input, 'extraction');
-            await streamToElement(response, 'extract-output');
-        }
-        
-        async function runClassification() {
-            const input = document.getElementById('class-input').value;
-            if (!input) return alert('Enter text to classify');
-            const response = await callJev(input, 'classification');
-            await streamToElement(response, 'class-output');
-        }
-        
-        async function runSummarization() {
-            const input = document.getElementById('summary-input').value;
-            if (!input) return alert('Enter text to summarize');
-            const response = await callJev(input, 'summarization');
-            await streamToElement(response, 'summary-output');
-        }
-        
-        async function runSentiment() {
-            const input = document.getElementById('sentiment-input').value;
-            if (!input) return alert('Enter text to analyze');
-            const response = await callJev(input, 'sentiment');
-            await streamToElement(response, 'sentiment-output');
-        }
-        
-        async function runEntity() {
-            const input = document.getElementById('entity-input').value;
-            if (!input) return alert('Enter text for analysis');
-            const response = await callJev(input, 'entity');
-            await streamToElement(response, 'entity-output');
-        }
-        
-        async function runIntent() {
-            const input = document.getElementById('intent-input').value;
-            if (!input) return alert('Enter message to analyze');
-            const response = await callJev(input, 'intent');
-            await streamToElement(response, 'intent-output');
-        }
-        
-        async function runModeration() {
-            const input = document.getElementById('moderation-input').value;
-            if (!input) return alert('Enter content to check');
-            const response = await callJev(input, 'moderation');
-            await streamToElement(response, 'moderation-output');
-        }
-        
-        async function runToxicity() {
-            const input = document.getElementById('toxicity-input').value;
-            if (!input) return alert('Enter text to scan');
-            const response = await callJev(input, 'toxicity');
-            await streamToElement(response, 'toxicity-output');
-        }
-        
-        async function runFraud() {
-            const input = document.getElementById('fraud-input').value;
-            if (!input) return alert('Enter transaction details');
-            const response = await callJev(input, 'fraud');
-            await streamToElement(response, 'fraud-output');
-        }
-        
-        async function runRouting() {
-            const input = document.getElementById('routing-input').value;
-            if (!input) return alert('Enter message to route');
-            const response = await callJev(input, 'routing');
-            await streamToElement(response, 'routing-output');
-        }
-        
-        async function runPriority() {
-            const input = document.getElementById('priority-input').value;
-            if (!input) return alert('Enter issue description');
-            const response = await callJev(input, 'priority');
-            await streamToElement(response, 'priority-output');
-        }
-        
-        function setExample(type, text) {
-            const inputId = type === 'eval' ? 'eval-input' : 
-                           type === 'extract' ? 'extract-input' : 
-                           type === 'class' ? 'class-input' : 
-                           type === 'summary' ? 'summary-input' :
-                           type === 'sentiment' ? 'sentiment-input' :
-                           type === 'entity' ? 'entity-input' :
-                           type === 'intent' ? 'intent-input' :
-                           type === 'moderation' ? 'moderation-input' :
-                           type === 'toxicity' ? 'toxicity-input' :
-                           type === 'fraud' ? 'fraud-input' :
-                           type === 'routing' ? 'routing-input' :
-                           type === 'priority' ? 'priority-input' : null;
-            if (inputId) {
-                document.getElementById(inputId).value = text;
-            }
-        }
-        
-        // Check API status on load
-        fetch('/health')
-            .then(r => r.json())
-            .then(d => {
-                const status = document.getElementById('status');
-                fetch('/api/jev', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ prompt: 'test', type: 'evaluation' })
-                })
-                .then(r => r.body.getReader().read())
-                .then(({ value }) => {
-                    const text = new TextDecoder().decode(value);
-                    if (text.includes('[ERROR]')) {
-                        status.className = 'status demo';
-                        status.innerHTML = '⚠️ <strong>Demo Mode</strong> - Simulated responses. Set AI_GATEWAY_API_KEY for real Jev.';
-                    } else {
-                        status.className = 'status live';
-                        status.innerHTML = '✅ <strong>Live Mode</strong> - Using real Jev model!';
-                    }
-                })
-                .catch(() => {
-                    status.className = 'status demo';
-                });
-            });
-    </script>
+      }
+    }
+  } catch (e) {
+    errEl.innerHTML = `<div class="err">${esc(e.message)}</div>`;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Build app';
+    // Drop the blinking caret once generation has settled.
+    codeEl.innerHTML = esc(code) || (blocked ? 'Build blocked.' : 'No code generated.');
+  }
+}
+
+function renderPlan(plan) {
+  if (!plan) return '';
+  const items = [
+    ['App type', plan.appType, ''],
+    ['Complexity', plan.complexity, ''],
+    ['Style', plan.styling, ''],
+    ['Risk', plan.risk, 'risk-' + plan.risk],
+    ['Buildable', plan.buildable ? 'Yes' : 'No', ''],
+    ['Needs backend', plan.needsBackend ? 'Yes (will simulate)' : 'No', ''],
+    ['Persistence', plan.needsPersistence ? 'localStorage' : 'None', ''],
+    ['Planner', plan.simulated ? 'simulated' : plan.engine, plan.simulated ? 'risk-medium' : ''],
+  ];
+  return `<div class="plan-grid">${items.map(([k, v, cls]) =>
+    `<div class="plan-item"><div class="plan-k">${esc(k)}</div><div class="plan-v ${cls}">${esc(v)}</div></div>`
+  ).join('')}</div>` +
+  (plan.appTypeProbs && Object.keys(plan.appTypeProbs).length ? `
+    <div class="answer" style="margin-top:14px">
+      <div class="answer-q">App-type probability distribution</div>
+      <div class="bars">${Object.entries(plan.appTypeProbs).sort((a,b)=>b[1]-a[1]).map(([k,v],i)=>`
+        <div class="bar-row${i===0?' top':''}">
+          <span class="bar-name" title="${esc(k)}">${esc(k)}</span>
+          <span class="bar-track"><span class="bar-fill" style="width:${(v*100).toFixed(1)}%"></span></span>
+          <span class="bar-val">${pct(v)}</span>
+        </div>`).join('')}
+      </div>
+    </div>` : '');
+}
+
+function showPreview(html) {
+  // Rendered via srcdoc in a frame sandboxed WITHOUT allow-same-origin, so the
+  // generated app gets an opaque origin: it cannot read this page's cookies or
+  // storage, and the server-injected CSP (default-src 'none') blocks network.
+  const frame = document.createElement('iframe');
+  frame.className = 'preview-frame';
+  frame.setAttribute('sandbox', 'allow-scripts allow-modals allow-popups-to-escape-sandbox');
+  frame.setAttribute('referrerpolicy', 'no-referrer');
+  frame.setAttribute('title', 'Generated app preview');
+  frame.srcdoc = html;
+  const host = $('builder-preview');
+  host.innerHTML = '';
+  host.appendChild(frame);
+}
+
+function downloadApp() {
+  if (!PREVIEW_HTML) return;
+  const blob = new Blob([PREVIEW_HTML], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'epic-jev-app.html';
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+async function copyCode() {
+  const text = PREVIEW_HTML || $('builder-code').textContent;
+  try {
+    await navigator.clipboard.writeText(text);
+    const b = $('copy-btn');
+    const old = b.textContent;
+    b.textContent = '✓ Copied';
+    setTimeout(() => { b.textContent = old; }, 1600);
+  } catch {
+    $('builder-error').innerHTML = '<div class="err">Clipboard unavailable — use Download instead.</div>';
+  }
+}
+
+boot();
+</script>
 </body>
 </html>

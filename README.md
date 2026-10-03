@@ -1,404 +1,255 @@
-# 🚀 Epic Jev - Do Anything with AI
+# 🚀 Epic Jev
 
-**Production-ready AI application** demonstrating **12+ real-world use cases** with a single, fast, deterministic model: **Jev** (TypeSafe AI).
+**A decision engine + app builder.** Twelve AI capabilities that return
+*probabilities instead of guesses*, plus an App Builder that turns a sentence
+into a working, sandboxed web app.
 
-## 🎯 What It Does
-
-| Category | Tasks | Examples |
-|----------|-------|----------|
-| **Core** | Evaluation, Extraction, Classification, Summarization | Fact-checking, data mining, sentiment analysis, content compression |
-| **Content** | Sentiment Analysis, Entity Recognition, Intent Detection | Customer feedback, NER, chatbot routing |
-| **Safety** | Content Moderation, Toxicity Detection, Fraud Detection | Policy enforcement, abuse prevention, transaction scoring |
-| **Operations** | Smart Routing, Priority Scoring | Support triage, SLA management |
-
-**Total: 12 Production-Ready Capabilities in One App**
+Live: **https://epic-jev.vercel.app** · [Security model](SECURITY.md) · [API](API_REFERENCE.md) · [Capabilities](CAPABILITIES.md)
 
 ---
 
-## 🚀 Quick Start
+## What makes this different
 
-### Demo Mode (No Setup Required)
+Most "AI demo" apps pipe a prompt into a chat model and stream back prose.
+Epic Jev uses **decision models** — [Clef](https://huggingface.co/Cloudflare/clef)
+(Cloudflare) and [Jev](https://typesafe.ai/) (TypeSafe AI) — which take a
+*state* plus a *schema of typed questions* and return a **probability for every
+allowed option in a single forward pass**.
+
+That means:
+
+- **No output parsing.** You get `{ choice, probabilities, confidence }`, not a
+  string you have to regex apart.
+- **Deterministic.** Same input → same distribution. No temperature roulette.
+- **Fast.** Clef-flash runs at ~39 ms median; Jev ~524 ms.
+- **Calibrated.** Every answer carries its full distribution, so you can set
+  your own thresholds instead of trusting a single label.
+
+Clef and Jev are **API-compatible** (both speak the System One protocol), so
+swapping engines is a config change, not a rewrite.
+
+---
+
+## Capabilities
+
+Ten run on the decision engine; two need free-form text and run on a generation
+LLM instead (decision models cannot write prose — see
+[Architecture](#architecture)).
+
+| Tab | Capability | Engine | Returns |
+|-----|-----------|--------|---------|
+| Core | 📋 Text Evaluation | decision | accuracy, verdict, trust score |
+| Core | 🏷️ Classification | decision | topic, register, actionability |
+| Core | 📝 Summarization | generation | TL;DR + key points |
+| Core | 🔍 Data Extraction | generation | structured JSON entities |
+| Content | 😊 Sentiment Analysis | decision | polarity, intensity, churn risk |
+| Content | 🎯 Intent Detection | decision | intent, emotion, urgency |
+| Content | 🏢 Entity Recognition | decision | person/org/location/money/date/product |
+| Safety | 🚫 Content Moderation | decision | verdict + 8 violation categories |
+| Safety | ☢️ Toxicity Detection | decision | toxicity level, target, publishability |
+| Safety | 🔐 Fraud Detection | decision | risk tier + 5 signal flags |
+| Ops | 📍 Smart Routing | decision | team, channel, escalation, impact |
+| Ops | ⚠️ Priority Scoring | decision | severity, priority, SLA, page |
+
+---
+
+## 🛠️ App Builder
+
+Describe an app in plain language. Two models cooperate:
+
+1. **A decision model plans it** — classifying app type, complexity, risk,
+   styling, and whether it needs persistence or a backend, in one forward pass.
+2. **A code model writes it** — producing a complete, self-contained single-file
+   HTML app.
+
+You get a **live preview** in a sandboxed frame, plus **download** and **copy**
+buttons. The generated app is never executed on the server and cannot reach the
+network — see [SECURITY.md](SECURITY.md) for the full containment model.
+
+Requests for malware, phishing, or credential theft are blocked by a
+model-independent guard *before* any code is generated.
+
+---
+
+## Quick start
 
 ```bash
+git clone https://github.com/Sm0k367/epic-jev.git
+cd epic-jev
 npm install
 npm start
 ```
 
-Visit **http://localhost:3000** — works immediately!
+Open **http://localhost:3000**. It works immediately — no API key required.
 
-### Real Jev Mode
+### Demo mode vs. live mode
+
+With **no credentials**, the app runs in demo mode:
+
+- Decisions come from a **deterministic local simulator** (keyword-driven, so
+  "the system is down" really does route to engineering and score Critical).
+  It is clearly labelled `⚠ simulated` in the UI — it never pretends to be a
+  model.
+- Generated apps use a built-in working fallback.
+
+Add credentials to switch to real models. Nothing else changes.
+
+---
+
+## Configuration
+
+All variables are **optional**. See [`.env.example`](.env.example).
+
+| Variable | Enables | Where to get it |
+|----------|---------|-----------------|
+| `CLOUDFLARE_ACCOUNT_ID` + `CLOUDFLARE_AUTH_TOKEN` | **Clef** decision engine | [dash.cloudflare.com](https://dash.cloudflare.com) → Account ID; API Tokens → Workers AI |
+| `AI_GATEWAY_API_KEY` | **Jev** decisions + all generation | [vercel.com/dashboard/ai-gateway/keys](https://vercel.com/dashboard/ai-gateway/keys) |
+| `DECISION_ENGINE` | Force an engine | `clef` \| `clef-flash` \| `jev` \| `laya` \| `demo` |
+| `AI_GATEWAY_TEXT_MODEL` | Override the text model | default `openai/gpt-oss-20b` |
+| `AI_GATEWAY_MODEL` | Override the code model | default `poolside/laguna-s-2.1-free` (free) |
+
+**Engine auto-selection:** `clef-flash` if Cloudflare creds are present →
+`jev` if a Gateway key is present → `demo`. A requested engine whose
+credentials are missing is ignored rather than called unauthenticated.
+
+---
+
+## Architecture
+
+```
+                 ┌──────────────────────────────────────┐
+   Browser  ───▶ │  Express server                      │
+                 │                                      │
+                 │  /api/decide    ──┐                  │
+                 │  /api/generate  ──┤                  │
+                 │  /api/builder/* ──┤                  │
+                 └───────────────────┼──────────────────┘
+                                     │
+              ┌──────────────────────┼──────────────────────┐
+              ▼                      ▼                      ▼
+     ┌─────────────────┐   ┌──────────────────┐   ┌──────────────────┐
+     │ lib/decision.js │   │ lib/generate.js  │   │ lib/builder.js   │
+     │                 │   │                  │   │                  │
+     │ Clef (CF REST)  │   │ Vercel AI        │   │ plan → generate  │
+     │ Jev  (Gateway)  │   │ Gateway          │   │ → sanitise       │
+     │ demo simulator  │   │ (text + code)    │   │ → stream         │
+     └─────────────────┘   └──────────────────┘   └──────────────────┘
+```
+
+**Why two engines?** Decision models return probabilities only — they have no
+text generation at all. Summarization and Data Extraction need prose, so they
+route to a generation LLM. The App Builder uses *both*: a decision model to
+plan, a code model to write. This is the architecture Cloudflare recommends —
+Clef in the hot path for decisions, an LLM alongside it for action.
+
+| File | Lines | Role |
+|------|-------|------|
+| `server.js` | 337 | HTTP layer, security middleware, rate limiting, SSE |
+| `lib/decision.js` | 594 | Clef/Jev clients + deterministic demo simulator |
+| `lib/schemas.js` | 407 | Typed-question schemas for all 12 capabilities |
+| `lib/generate.js` | 178 | Text/code generation via the AI Gateway |
+| `lib/builder.js` | 409 | App planning, generation, sanitisation, CSP |
+| `public/index.html` | 627 | UI: probability bars, builder, sandboxed preview |
+
+~2,550 lines total.
+
+---
+
+## API
 
 ```bash
-# 1. Get API key
-# https://vercel.com/dashboard/ai-gateway/keys
+# Decision capability
+curl -X POST localhost:3000/api/decide \
+  -H 'Content-Type: application/json' \
+  -d '{"capability":"priority","text":"The system is completely down for all users."}'
 
-# 2. Set environment variable
-export AI_GATEWAY_API_KEY=your_key_here
+# Generation capability
+curl -X POST localhost:3000/api/generate \
+  -H 'Content-Type: application/json' \
+  -d '{"capability":"summarization","text":"..."}'
 
-# 3. Start server
-npm start
+# App Builder (SSE stream: plan → chunk* → done → app)
+curl -N -X POST localhost:3000/api/builder/build \
+  -H 'Content-Type: application/json' \
+  -d '{"description":"A pomodoro timer with a progress ring."}'
 ```
+
+Full reference: [API_REFERENCE.md](API_REFERENCE.md)
 
 ---
 
-## 📋 Complete Feature List
+## Security
 
-### 🎯 Core Tasks (4)
-- **📋 Text Evaluation** - Judge accuracy of statements
-- **🔍 Data Extraction** - Pull key concepts and information
-- **🏷️ Classification** - Categorize and label content
-- **📝 Summarization** - Compress content to key points
+The App Builder accepts untrusted input and produces executable code, so it is
+the sensitive surface. Controls in place:
 
-### 📊 Content Analysis (3)
-- **😊 Sentiment Analysis** - Detect emotion and tone
-- **🏢 Entity Recognition** - Identify people, places, organizations
-- **🎯 Intent Detection** - Understand what users want
+- **No server-side execution** — no `eval`, `vm`, or `child_process` anywhere.
+- **Opaque-origin sandbox** — the preview iframe omits `allow-same-origin`, so
+  generated code cannot read this app's cookies or storage.
+- **Injected CSP** — `default-src 'none'; connect-src 'none'` inside the
+  generated document: no network access at all.
+- **Output sanitisation** — frame-escape vectors stripped, 200 KiB cap.
+- **Abuse guard** — model-independent blocklist runs before any generation.
+- **Prototype-pollution safe** — own-property capability lookups.
+- **Rate limiting** — tiered by cost (6/min for builds, 60/min for decisions).
+- **Security headers** on every response, including static assets.
 
-### 🛡️ Safety & Compliance (3)
-- **🚫 Content Moderation** - Flag policy violations
-- **☢️ Toxicity Detection** - Identify harmful language
-- **🔐 Fraud Detection** - Score transaction risk
-
-### 🔀 Operations (2)
-- **📍 Smart Routing** - Route issues to best handler
-- **⚠️ Priority Scoring** - Calculate task urgency
+Full threat model, verification results, and honestly-stated residual risk:
+**[SECURITY.md](SECURITY.md)**
 
 ---
 
-## 🏗️ Architecture
+## Deploy
 
-```
-┌─────────────────────────────────────┐
-│     Epic Jev Web UI (React)         │
-│  • Tab-based interface              │
-│  • Real-time streaming display      │
-│  • 12+ interactive demos            │
-└────────────┬────────────────────────┘
-             │
-┌────────────▼────────────────────────┐
-│   Express.js Backend (/api/jev)     │
-│  • SSE streaming                    │
-│  • Demo & real mode support         │
-│  • Multi-type request routing       │
-└────────────┬────────────────────────┘
-             │
-    ┌────────┴────────┐
-    │                 │
-[With API Key]  [Without API Key]
-    │                 │
-    ▼                 ▼
- Real Jev      Demo Mode
- (70-500ms)    (Instant)
-```
+### Vercel
 
----
-
-## 🎮 Live Examples
-
-### Example 1: Customer Support Triage
-```
-Input:  "I can't login to my account. I reset my password but still can't access."
-
-Steps:
-  1. Sentiment Analysis → Frustrated (Negative)
-  2. Intent Detection → Seeking Support
-  3. Smart Routing → TECHNICAL_SUPPORT (94% confidence)
-  4. Priority Scoring → HIGH (8/10)
-
-Output: Pre-triaged ticket with routing and urgency level
-```
-
-### Example 2: Content Moderation
-```
-Input:  "Check this user comment for policy violations"
-
-Steps:
-  1. Toxicity Detection → Minimal (2/100)
-  2. Content Moderation → No violations detected
-  3. Classification → Professional tone
-
-Output: APPROVED ✓ Safe to publish
-```
-
-### Example 3: Fraud Detection
-```
-Input:  "Transaction: $50 from familiar store, verified card, home city"
-
-Steps:
-  1. Entity Recognition → Extract transaction details
-  2. Fraud Detection → Score risk (LOW: 12%)
-  3. Priority Scoring → Normal processing
-
-Output: Auto-approve transaction
-```
-
----
-
-## 💰 Performance Comparison
-
-| Metric | Jev | GPT-4o | Claude |
-|--------|-----|--------|--------|
-| **Latency** | 70-500ms | 3-10s | 3-10s |
-| **Input Cost** | $0.042/M | $0.30/M | $0.30/M |
-| **Output Cost** | FREE | $1.50/M | $1.50/M |
-| **Throughput** | ~480 chars/sec | ~50 chars/sec | ~50 chars/sec |
-| **Best For** | Fast decisions | Creative writing | Long reasoning |
-
----
-
-## 🚀 Deployment
-
-### Cloudflare Workers (Fastest)
 ```bash
-npm run deploy
-# Live at: epic-jev.unruly-capricorn.workers.dev
+npx vercel deploy --prod
 ```
 
-### Vercel (Easiest)
-```bash
-vercel deploy
-# Set AI_GATEWAY_API_KEY in Vercel dashboard
-```
+Or push to GitHub and connect the repo — every push auto-deploys. Add the
+environment variables in **Project → Settings → Environment Variables**.
 
-### Heroku (Classic)
-```bash
-git push heroku main
-```
+> **Note:** `vercel.json` uses a `builds` block, so Vercel's dashboard Build
+> Settings are ignored in favour of it. That is intentional — the app is a
+> plain Express server with no build step.
 
 ### Docker
+
 ```bash
 docker build -t epic-jev .
-docker run -p 3000:3000 -e AI_GATEWAY_API_KEY=xxx epic-jev
+docker run -p 3000:3000 epic-jev
 ```
+
+### Render
+
+`render.yaml` is included — connect the repo and it picks up the config.
 
 ---
 
-## 📚 API Reference
+## Verification
 
-### Endpoint: POST /api/jev
+The app was tested end-to-end in a real browser, not just via curl:
 
-**Request:**
-```json
-{
-  "prompt": "Text to analyze",
-  "type": "evaluation|extraction|classification|summarization|sentiment|entity|intent|moderation|toxicity|fraud|routing|priority"
-}
-```
-
-**Response:** Server-Sent Events (SSE) stream
-```
-data: Character stream...
-data: [DONE]
-```
-
-**cURL Example:**
-```bash
-curl -X POST http://localhost:3000/api/jev \
-  -H "Content-Type: application/json" \
-  -d '{
-    "prompt": "Is machine learning a subset of AI?",
-    "type": "evaluation"
-  }'
-```
+- All 12 capabilities return structurally valid answers (distributions sum to
+  1.0, probabilities in `[0,1]`, scores within their legend bounds).
+- Probability bars, boolean meters, and score levels render correctly.
+- The App Builder streams a plan, generates code, and renders a **working,
+  interactive** app in the sandboxed preview with zero console errors.
+- All 13 security controls in [SECURITY.md](SECURITY.md) were exercised against
+  a running instance and passed.
 
 ---
 
-## 🔧 Configuration
+## Credits
 
-### Environment Variables
-```bash
-# Optional: Real Jev API key (leave empty for demo mode)
-AI_GATEWAY_API_KEY=vcp_your_key_here
+- **[Clef](https://huggingface.co/Cloudflare/clef)** — Cloudflare's open-source
+  decision models (Apache-2.0), hosted on Workers AI.
+- **[Jev](https://typesafe.ai/)** — TypeSafe AI's System One decision model.
+- **[Vercel AI Gateway](https://vercel.com/docs/ai-gateway)** — unified model
+  access; its AI SDK ships a native `experimental_evaluate` API for decision
+  models.
 
-# Server port (default: 3000)
-PORT=3000
+## License
 
-# Optional: KMS authentication
-VERCEL_KMS_ISSUER_ID=your_issuer_id
-VERCEL_KMS_KEY_ID=your_key_id
-```
-
-### .env File
-```bash
-# Create .env (not tracked by git)
-AI_GATEWAY_API_KEY=your_key_here
-PORT=3000
-```
-
----
-
-## 🔒 Security
-
-✅ **No hardcoded secrets** — All credentials from environment variables  
-✅ **Demo mode** — Works without API key  
-✅ **Production-ready** — Security audit passed  
-✅ **Input validation** — All endpoints validated  
-✅ **CORS configured** — Safe cross-origin requests  
-✅ **SSE streaming** — Real-time without polling  
-
----
-
-## 📊 Use Cases by Industry
-
-### 🏥 Healthcare
-- Patient feedback sentiment analysis
-- Medical record information extraction
-- Priority triage for ER intake
-
-### 🛒 E-Commerce
-- Review sentiment analysis
-- Product classification
-- Fraud detection for payments
-- Customer intent routing
-
-### 🏢 Enterprise
-- Support ticket triage
-- Internal documentation summarization
-- Employee feedback analysis
-- Policy compliance checking
-
-### 🎓 Education
-- Student feedback analysis
-- Essay evaluation
-- Content moderation for forums
-- Student intent detection (help vs. question)
-
-### 🚗 Finance
-- Transaction fraud scoring
-- Customer sentiment from complaints
-- Priority routing for incidents
-- Regulatory compliance checks
-
----
-
-## 🎓 Learning Resources
-
-- **Full Capabilities Guide:** See [CAPABILITIES.md](./CAPABILITIES.md)
-- **Integration Examples:** See [JEV_INTEGRATION_GUIDE.md](../JEV_INTEGRATION_GUIDE.md)
-- **KMS Authentication:** See [KMS_INTEGRATION_SUMMARY.md](../KMS_INTEGRATION_SUMMARY.md)
-- **Jev Model:** https://typesafe.ai
-- **Vercel AI Gateway:** https://vercel.com/docs/ai-gateway
-
----
-
-## 📁 File Structure
-
-```
-epic-jev/
-├── server.js              # Express backend with /api/jev endpoint
-├── public/
-│   └── index.html         # Interactive UI with 12 demos
-├── package.json           # Dependencies and scripts
-├── README.md              # This file
-├── CAPABILITIES.md        # Detailed feature guide
-├── .env.example           # Environment template
-└── wrangler.toml          # Cloudflare Workers config
-```
-
----
-
-## 🔄 Integration Examples
-
-### Express.js
-```javascript
-import { streamText } from 'ai';
-
-app.post('/api/analyze', async (req, res) => {
-  const { textStream } = await streamText({
-    model: 'typesafe-ai/jev',
-    prompt: `Analyze sentiment: ${req.body.text}`,
-  });
-  
-  for await (const chunk of textStream) {
-    res.write(`data: ${chunk}\n\n`);
-  }
-  res.end();
-});
-```
-
-### Next.js API Route
-```javascript
-export async function POST(req) {
-  const { text } = await req.json();
-  
-  const { textStream } = await streamText({
-    model: 'typesafe-ai/jev',
-    prompt: `Evaluate: ${text}`,
-  });
-  
-  return new Response(textStream);
-}
-```
-
-### React Component
-```javascript
-const [output, setOutput] = useState('');
-
-async function analyze(text) {
-  const response = await fetch('/api/jev', {
-    method: 'POST',
-    body: JSON.stringify({ prompt: text, type: 'sentiment' }),
-  });
-  
-  const reader = response.body.getReader();
-  while (true) {
-    const { done, value } = await reader.read();
-    if (done) break;
-    
-    const chunk = new TextDecoder().decode(value);
-    setOutput(prev => prev + chunk);
-  }
-}
-```
-
----
-
-## 🎯 Next Steps
-
-1. **Try it locally:**
-   ```bash
-   npm install && npm start
-   ```
-
-2. **Get an API key:**
-   - https://vercel.com/dashboard/ai-gateway/keys
-   - Or: https://console.typesafe.ai/settings/keys
-
-3. **Enable real Jev:**
-   ```bash
-   export AI_GATEWAY_API_KEY=your_key
-   npm start
-   ```
-
-4. **Deploy to production:**
-   ```bash
-   npm run deploy  # Cloudflare
-   # or
-   vercel deploy   # Vercel
-   ```
-
-5. **Integrate into your app:**
-   - Copy `/api/jev` pattern to your backend
-   - Use SSE streaming for real-time responses
-   - Add more capability types as needed
-
----
-
-## 📞 Support
-
-- **Questions:** Check [CAPABILITIES.md](./CAPABILITIES.md)
-- **Issues:** Review the Express server logs
-- **Help:** See integration examples above
-- **Community:** TypeSafe AI Discord / Vercel Discord
-
----
-
-## 📄 License
-
-MIT — Use freely in your projects
-
----
-
-**Epic Jev** • Do Anything with AI • Real-time Streaming • Production-Ready
-
-**Powered by:** Jev (TypeSafe AI) • Express.js • Real-time SSE Streaming
+MIT

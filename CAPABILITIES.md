@@ -1,554 +1,420 @@
-# 🚀 Epic Jev - Complete Capabilities Guide
+# Capabilities — Epic Jev
 
-**Epic Jev** is a production-ready AI application demonstrating **10+ real-world use cases** with a single, fast, deterministic model: **Jev** (TypeSafe AI).
+Twelve capabilities. Ten run on a **decision model** (Clef or Jev) and return
+probability distributions. Two need free-form text and run on a **generation
+LLM**, because decision models cannot generate prose at all.
 
----
+Every schema below is the actual typed-question schema the app sends. Nothing
+here is aspirational — it is dumped from `lib/schemas.js`.
 
-## 📊 Feature Matrix
-
-| Category | Task | Use Cases | Real-World Example |
-|----------|------|-----------|-------------------|
-| **Core** | Text Evaluation | Fact-checking, claim verification, statement validation | "Is Python the most popular language?" |
-| **Core** | Data Extraction | Information extraction, entity detection, keyword mining | Extract key concepts from documents |
-| **Core** | Classification | Sentiment analysis, category assignment, type detection | Categorize customer feedback |
-| **Core** | Summarization | Content summary, abstract generation, compression | Compress long documents |
-| **Content** | Sentiment Analysis | Customer feedback, review analysis, brand monitoring | "This product is amazing!" |
-| **Content** | Entity Recognition | NER, knowledge extraction, reference identification | Extract Person, Place, Organization |
-| **Content** | Intent Detection | Chatbots, support routing, conversation flow | Detect if user wants help, info, or purchase |
-| **Safety** | Content Moderation | Jailbreak detection, policy enforcement, filtering | Flag policy violations |
-| **Safety** | Toxicity Detection | Abuse prevention, toxic filtering, safety monitoring | Detect harmful language |
-| **Safety** | Fraud Detection | Payment fraud, account security, anomaly detection | Score transaction risk (0-100%) |
-| **Routing** | Smart Routing | Support triage, department routing, escalation | Route to Technical Support vs Sales |
-| **Routing** | Priority Scoring | SLA management, queue prioritization, response time | Calculate task urgency (1-10) |
+- [How decision answers work](#how-decision-answers-work)
+- [Core Tasks](#core-tasks)
+- [Content Analysis](#content-analysis)
+- [Safety & Compliance](#safety--compliance)
+- [Routing & Operations](#routing--operations)
+- [App Builder](#app-builder)
+- [Demo mode](#demo-mode)
+- [Choosing an engine](#choosing-an-engine)
 
 ---
 
-## 🎯 Core Tasks (4)
+## How decision answers work
 
-### 1. **Text Evaluation** 📋
-**What it does:** Judge accuracy and validity of statements.
+A decision model takes a `state` (the text) and a map of typed `questions`, and
+returns one answer per question **in a single forward pass**. There is no text
+generation and no output parsing.
 
-```javascript
-Input:  "Machine learning is a subset of artificial intelligence."
-Output: "Yes. This statement is accurate. ML focuses on systems that learn 
-         and improve from experience without explicit programming."
-```
+Three question types:
 
-**Real-World Use:**
-- Fact-checking platforms
-- Claim verification systems
-- Academic statement validation
-- Content authenticity scoring
+| Type | Returns | Example |
+|------|---------|---------|
+| `noul` | `P(true)` — a single probability | `0.901` → 90.1% likely yes |
+| `choice` | The top option + the full distribution | `{block: 0.95, review: 0.04, approve: 0.01}` |
+| `score` | A probability-weighted position on an ordered scale | `3.03` of `0–4` |
 
----
+`noul` is **P(true), not confidence in either outcome**. `0.9` means "likely
+yes"; `0.1` means "likely no" — both are high-confidence, in opposite
+directions.
 
-### 2. **Data Extraction** 🔍
-**What it does:** Pull key concepts and information from text.
+`score` can land **between** levels (`3.03`), because it is the weighted mean
+of the distribution rather than a picked index. That is useful: `2.9` and `3.4`
+both round to level 3, but `3.4` is the more confident call.
 
-```javascript
-Input:  "Token streaming delivers content in real-time, enabling responsive 
-         UIs with progressive rendering and async processing."
-Output: "1. Token streaming - real-time delivery
-         2. Responsive UIs - progressive rendering
-         3. Async processing - non-blocking handling"
-```
+Every answer also carries `confidence`, so you can set your own threshold
+instead of trusting a bare label:
 
-**Real-World Use:**
-- Resume parsing
-- Information extraction from documents
-- Product description analysis
-- Scientific paper summarization
-- Data enrichment pipelines
+```js
+const { answers } = await decide('fraud', transactionText);
 
----
-
-### 3. **Classification** 🏷️
-**What it does:** Categorize and label content.
-
-```javascript
-Input:  "The KMS implementation is elegant and performant."
-Output: "Positive. Expresses satisfaction with implementation quality."
-```
-
-**Real-World Use:**
-- Sentiment analysis
-- Support ticket categorization
-- Document classification
-- Content tagging
-- Multilingual classification
-
----
-
-### 4. **Summarization** 📝
-**What it does:** Compress content to key points.
-
-```javascript
-Input:  "Jev is a specialized model with 32K context, deterministic outputs, 
-         excelling at structured extraction and classification tasks..."
-Output: "Jev is an enterprise-ready model specializing in structured text 
-         extraction with deterministic outputs and high context window."
-```
-
-**Real-World Use:**
-- Document summarization
-- Meeting note compression
-- News article abstracting
-- Long-form content reduction
-- Abstract generation
-
----
-
-## 📊 Content Analysis (3)
-
-### 5. **Sentiment Analysis** 😊
-**What it does:** Detect emotion, tone, and sentiment polarity.
-
-```javascript
-Input:  "Amazing product! Exceptional quality, great service!"
-Output: "Sentiment: POSITIVE (92% confidence)
-         Tone: Enthusiastic, professional
-         Key indicators: 'amazing', 'exceptional', exclamation marks"
-```
-
-**Real-World Use:**
-- Customer feedback analysis
-- Social media monitoring
-- Review sentiment scoring
-- Brand perception tracking
-- Employee feedback analysis
-
----
-
-### 6. **Entity Recognition** 🏢
-**What it does:** Identify people, places, organizations, products.
-
-```javascript
-Input:  "Sundar Pichai leads Google from Mountain View, 
-         driving innovation in cloud computing and AI."
-Output: "Entities Detected:
-         - PERSON: Sundar Pichai (CEO)
-         - ORGANIZATION: Google (Tech Company)
-         - LOCATION: Mountain View (California)
-         - TECHNOLOGY: AI, Cloud Computing"
-```
-
-**Real-World Use:**
-- Named entity recognition (NER)
-- Knowledge graph construction
-- Reference extraction
-- Document indexing
-- Relationship extraction
-
----
-
-### 7. **Intent Detection** 🎯
-**What it does:** Understand what user wants to accomplish.
-
-```javascript
-Input:  "Hi, I can't login to my account. I reset my password but still 
-         can't access my account."
-Output: "Intent: SEEKING_SUPPORT (96% confidence)
-         Primary: Problem resolution
-         Secondary: Information request
-         Tone: Frustrated
-         Action: Route to support with priority flag"
-```
-
-**Real-World Use:**
-- Chatbot conversation routing
-- Support ticket classification
-- Sales lead qualification
-- Intent-based automation
-- Conversation flow optimization
-
----
-
-## 🛡️ Safety & Compliance (3)
-
-### 8. **Content Moderation** 🚫
-**What it does:** Flag policy violations, inappropriate content, jailbreaks.
-
-```javascript
-Input:  "This is professional business communication discussing requirements."
-Output: "Safety Score: 95/100 ✓ APPROVED
-         Violations: NONE
-         Confidence: 98%"
-```
-
-**Real-World Use:**
-- Comment filtering
-- Jailbreak detection
-- Policy violation flagging
-- User-generated content review
-- Community guideline enforcement
-
----
-
-### 9. **Toxicity Detection** ☢️
-**What it does:** Identify harmful, abusive, or toxic language.
-
-```javascript
-Input:  "This is constructive feedback on system architecture."
-Output: "Toxicity Level: MINIMAL (2/100)
-         Language: Professional
-         Tone: Constructive
-         Recommendation: SAFE TO PUBLISH"
-```
-
-**Real-World Use:**
-- Abuse prevention
-- Toxic comment filtering
-- Harassment detection
-- Safety monitoring
-- Platform moderation
-
----
-
-### 10. **Fraud Detection** 🔐
-**What it does:** Score transaction risk and detect anomalies.
-
-```javascript
-Input:  "User purchased $49.99 item from familiar store using verified card."
-Output: "Fraud Risk: LOW (12%)
-         Flags: None
-         ✓ Standard amount
-         ✓ Location matches history
-         ✓ Verified payment method
-         ✓ Behavioral baseline normal"
-```
-
-**Real-World Use:**
-- Payment fraud prevention
-- Account security scoring
-- Transaction anomaly detection
-- Identity verification
-- Risk assessment
-
----
-
-## 🔀 Routing & Operations (2)
-
-### 11. **Smart Routing** 📍
-**What it does:** Route issues to best team/handler/department.
-
-```javascript
-Input:  "The API returns 500 error processing large datasets 
-         with database integration."
-Output: "Route To: TECHNICAL_SUPPORT (94% confidence)
-         Reason: System architecture and implementation issue
-         Secondary: ENGINEERING_TEAM (87%)"
-```
-
-**Real-World Use:**
-- Support ticket triage
-- Department routing
-- Escalation logic
-- Tool/specialist selection
-- LLM model selection
-
----
-
-### 12. **Priority Scoring** ⚠️
-**What it does:** Calculate task urgency and SLA requirements.
-
-```javascript
-Input:  "Multiple users report system completely down. 
-         Can't access any services."
-Output: "Priority Level: CRITICAL (9/10)
-         SLA: 1 hour response time
-         Blocking: Production system
-         Users affected: Multiple
-         Revenue impact: High"
-```
-
-**Real-World Use:**
-- SLA management
-- Queue prioritization
-- Response time calculation
-- Escalation triggering
-- Resource allocation
-
----
-
-## 🏗️ Architecture
-
-### How It Works
-
-```
-Your Application
-       ↓
-Epic Jev Web UI
-       ↓
-Express.js Backend (/api/jev endpoint)
-       ↓
-       ├─→ [With API Key]
-       │   └─→ Real Jev Model (TypeSafe AI)
-       │       └─→ Structured Response (70-500ms)
-       │
-       └─→ [Without API Key]
-           └─→ Demo Mode (Simulated Response)
-               └─→ Instant Response
-```
-
-### Streaming Response
-
-```javascript
-// Client receives real-time character streaming
-data: "S"
-data: "e"
-data: "n"
-data: "t"
-data: "i"
-data: "m"
-...
-data: "[DONE]"
+// Don't just read the label — act on the distribution
+if (answers.approve.noul < 0.3 || answers.risk.choice === 'critical') {
+  holdForReview();
+} else if (answers.risk.confidence < 0.2) {
+  stepUpVerification();   // model is unsure
+} else {
+  approve();
+}
 ```
 
 ---
 
-## 💰 Performance & Cost
+## Core Tasks
 
-| Metric | Jev | GPT-4o | Claude |
-|--------|-----|--------|--------|
-| Latency | 70-500ms | 3-10s | 3-10s |
-| Input Cost | $0.042/M tokens | $0.30/M | $0.30/M |
-| Output Cost | FREE | $1.50/M | $1.50/M |
-| Throughput | ~480 chars/sec | ~50 chars/sec | ~50 chars/sec |
+### 📋 Text Evaluation
 
----
+Judge whether a statement is accurate and usable.
 
-## 🚀 Quick Start
-
-### Local Development
+| Question | Type | Options / levels |
+|----------|------|------------------|
+| `accurate` | noul | Is this statement factually accurate? |
+| `supported` | noul | Is the claim specific enough to be verified? |
+| `verdict` | choice | `accept` · `qualify` · `reject` |
+| `confidence` | score | Do not use < Needs review < Usable < High trust |
 
 ```bash
-# Install dependencies
-npm install
-
-# Run in demo mode (no API key needed)
-npm start
-
-# Visit http://localhost:3000
+curl -X POST localhost:3000/api/decide -H 'Content-Type: application/json' \
+  -d '{"capability":"evaluation","text":"Machine learning is a subset of artificial intelligence."}'
 ```
 
-### With Real Jev API
-
-```bash
-# Get API key from TypeSafe or Vercel
-export AI_GATEWAY_API_KEY=your_key_here
-
-# Start server
-npm start
-
-# All 12 capabilities now use real Jev model
-```
-
-### Deploy to Cloudflare
-
-```bash
-npm run deploy
-# Live at: epic-jev.unruly-capricorn.workers.dev
-```
+**Use for:** fact-checking pipelines, claim validation, gating whether
+generated content is safe to publish.
 
 ---
 
-## 📋 Use Case Recipes
+### 🏷️ Classification
 
-### Recipe 1: Customer Support Automation
-```javascript
-// Input: Customer support ticket
-// Step 1: Sentiment Analysis → Detect frustration level
-// Step 2: Intent Detection → What does customer want?
-// Step 3: Smart Routing → Route to best agent
-// Step 4: Priority Scoring → Set SLA
-// Output: Pre-triaged ticket with routing and priority
-```
+Categorise text by topic and register.
 
-### Recipe 2: Content Moderation Pipeline
-```javascript
-// Input: User-generated content
-// Step 1: Toxicity Detection → Any harmful language?
-// Step 2: Content Moderation → Policy violations?
-// Step 3: Classification → Content type?
-// Output: Approval/flag/quarantine decision
-```
+| Question | Type | Options / levels |
+|----------|------|------------------|
+| `topic` | choice | `technical` · `business` · `support` · `security` · `general` |
+| `register` | choice | `formal` · `neutral` · `casual` · `emotional` |
+| `actionable` | noul | Does this require someone to take an action? |
 
-### Recipe 3: Fraud Prevention System
-```javascript
-// Input: Payment transaction
-// Step 1: Entity Recognition → Extract transaction details
-// Step 2: Fraud Detection → Score risk
-// Step 3: Priority Scoring → Flag for review if needed
-// Output: Approve/block/manual review decision
-```
-
-### Recipe 4: Intelligent Chatbot
-```javascript
-// Input: User message
-// Step 1: Intent Detection → What does user want?
-// Step 2: Entity Recognition → Extract relevant data
-// Step 3: Smart Routing → Route to best handler
-// Output: Auto-response or route to specialist
-```
+**Use for:** inbox triage, tagging, routing content to the right pipeline.
 
 ---
 
-## 🔧 Configuration
+### 📝 Summarization
 
-### Environment Variables
+*Generation capability — runs on a text LLM, not a decision model.*
+
+Compresses text to a one-sentence TL;DR plus 3–5 key points.
 
 ```bash
-# Optional: Real Jev API key (leave empty for demo mode)
-AI_GATEWAY_API_KEY=vcp_your_key_here
-
-# Server port (default: 3000)
-PORT=3000
-
-# Optional: KMS authentication
-VERCEL_KMS_ISSUER_ID=your_issuer_id
-VERCEL_KMS_KEY_ID=your_key_id
+curl -X POST localhost:3000/api/generate -H 'Content-Type: application/json' \
+  -d '{"capability":"summarization","text":"Long article..."}'
 ```
 
-### Request Format
+Returns `{ text }` — prose, not probabilities.
 
-```javascript
-POST /api/jev
-Content-Type: application/json
+**Use for:** document digests, meeting notes, TL;DR generation.
 
+---
+
+### 🔍 Data Extraction
+
+*Generation capability — runs on a text LLM.*
+
+Pulls structured fields out of unstructured text. Returns **JSON**:
+
+```json
 {
-  "prompt": "Text to analyze",
-  "type": "evaluation|extraction|classification|summarization|sentiment|entity|intent|moderation|toxicity|fraud|routing|priority"
+  "entities": [{ "name": "Google", "type": "ORGANIZATION" }],
+  "key_points": ["…"],
+  "numbers": [49.99],
+  "topics": ["cloud computing"]
 }
 ```
 
-### Response Format (Server-Sent Events)
+The response includes both `text` (raw) and `json` (parsed, or `null` if the
+model returned something unparseable).
 
-```
-data: Character stream...
-data: [DONE]
-```
+**Use for:** invoice parsing, CRM enrichment, document intelligence.
 
----
-
-## 📈 Scaling Considerations
-
-- **Demo Mode:** Unlimited (no API calls)
-- **Real Mode:** Limited by Jev API quota
-- **Concurrent Requests:** Express handles unlimited concurrent SSE streams
-- **Throughput:** ~10,000 requests/day on free tier
-
-### Scale Up
-
-```javascript
-// For production, consider:
-// 1. Connection pooling
-// 2. Request rate limiting
-// 3. Response caching
-// 4. Database persistence
-// 5. Load balancing
-// 6. Async job queue
-```
+> **Why not a decision model?** Extraction produces open-ended values — an
+> arbitrary entity name, an arbitrary key point. Decision models score a
+> **fixed, known set of options**, so they can classify *"is there a person
+> mentioned?"* (see Entity Recognition) but cannot emit *"Sundar Pichai"*.
 
 ---
 
-## 🔒 Security
+## Content Analysis
 
-- ✅ No hardcoded secrets
-- ✅ All credentials from environment variables
-- ✅ Demo mode works without API key
-- ✅ CORS configured
-- ✅ Input validation on all endpoints
-- ✅ Rate limiting ready
-- ✅ KMS authentication support
+### 😊 Sentiment Analysis
+
+| Question | Type | Options / levels |
+|----------|------|------------------|
+| `polarity` | choice | `very_positive` · `positive` · `neutral` · `negative` · `very_negative` |
+| `intensity` | score | Flat < Mild < Moderate < Strong < Extreme |
+| `churn_risk` | noul | Is this author at risk of leaving? |
+| `needs_reply` | noul | Should a human respond? |
+
+**Use for:** review monitoring, brand health, escalation triggers. `churn_risk`
+and `needs_reply` are the operationally useful ones — polarity alone rarely
+tells you what to *do*.
 
 ---
 
-## 📚 Integration Examples
+### 🎯 Intent Detection
 
-### Express.js Integration
-```javascript
-import { streamText } from 'ai';
+| Question | Type | Options / levels |
+|----------|------|------------------|
+| `intent` | choice | `get_support` · `ask_question` · `purchase` · `complain` · `cancel` · `small_talk` |
+| `emotion` | choice | `calm` · `confused` · `frustrated` · `angry` · `happy` |
+| `self_serve` | noul | Could a bot or help article resolve this? |
+| `urgency` | score | Whenever < This week < Today < Right now |
 
-const response = await streamText({
-  model: 'typesafe-ai/jev',
-  prompt: 'Your prompt here',
-  maxTokens: 200,
-});
+**Use for:** chatbot routing, deflection (via `self_serve`), queue prioritisation.
 
-for await (const chunk of response.textStream) {
-  console.log(chunk);
+Clef scores **97.4 macro-F1** on CLINC150+OOS and **94.2** on BANKING77 —
+intent classification is exactly what decision models are best at.
+
+---
+
+### 🏢 Entity Recognition
+
+| Question | Type | Options / levels |
+|----------|------|------------------|
+| `has_person` | noul | Mentions a specific person? |
+| `has_org` | noul | Mentions an organisation? |
+| `has_location` | noul | Mentions a place? |
+| `has_money` | noul | Mentions a monetary amount? |
+| `has_date` | noul | Mentions a date or time period? |
+| `has_product` | noul | Mentions a product/service/technology? |
+| `dominant` | choice | `person` · `organisation` · `location` · `product` · `none` |
+
+**Use for:** filtering, PII detection, deciding whether a document is
+person-centric or org-centric.
+
+> **Detection, not extraction.** This tells you *whether* entities are present
+> and *which class dominates* — not their names. For named values, use
+> [Data Extraction](#-data-extraction).
+
+---
+
+## Safety & Compliance
+
+### 🚫 Content Moderation
+
+| Question | Type | Options / levels |
+|----------|------|------------------|
+| `verdict` | choice | `approve` · `review` · `block` |
+| `harassment` | noul | Harasses, bullies, or threatens a person? |
+| `hate` | noul | Hate toward a protected group? |
+| `sexual` | noul | Sexual or adult content? |
+| `violence` | noul | Promotes or glorifies violence? |
+| `self_harm` | noul | Encourages self-harm? |
+| `pii` | noul | Exposes private personal information? |
+| `spam` | noul | Spam, scam, or deceptive promotion? |
+
+**Use for:** UGC pipelines, comment filtering, trust & safety queues.
+
+The per-category `noul` scores matter more than `verdict` in practice — they
+tell you *why* something was flagged, which is what a human reviewer needs.
+
+```bash
+curl -X POST localhost:3000/api/decide -H 'Content-Type: application/json' \
+  -d '{"capability":"moderation","text":"You are a pathetic idiot and this garbage should be banned."}'
+```
+
+```json
+{
+  "verdict":    { "choice": "block", "confidence": 0.915 },
+  "harassment": { "noul": 0.932 },
+  "hate":       { "noul": 0.146 },
+  "sexual":     { "noul": 0.136 },
+  "violence":   { "noul": 0.070 },
+  "self_harm":  { "noul": 0.143 },
+  "pii":        { "noul": 0.048 },
+  "spam":       { "noul": 0.054 }
 }
 ```
 
-### Next.js API Route
-```javascript
-// app/api/analyze/route.js
-export async function POST(req) {
-  const { text, type } = await req.json();
-  
-  const { textStream } = await streamText({
-    model: 'typesafe-ai/jev',
-    prompt: `Analyze as ${type}: ${text}`,
-  });
-  
-  return new Response(textStream);
+Note how only `harassment` fires. Generic toxicity does **not** drag every
+category up with it — each has its own detector, so the flags tell a reviewer
+*why* something was blocked rather than lighting up the whole board.
+
+---
+
+### ☢️ Toxicity Detection
+
+| Question | Type | Options / levels |
+|----------|------|------------------|
+| `toxic` | noul | Is this text toxic? |
+| `level` | score | Clean < Mild < Harsh < Abusive < Severe |
+| `severe` | noul | Contains a severe insult or threat? |
+| `targeted` | noul | Aimed at a specific person or group? |
+| `obscene` | noul | Contains profanity? |
+| `publishable` | noul | Safe to publish without edits? |
+
+**Use for:** comment scoring, abuse prevention, deciding between delete /
+edit / allow.
+
+`targeted` is the distinction that matters most: toxicity aimed at a person is
+a different policy problem from general profanity.
+
+---
+
+### 🔐 Fraud Detection
+
+| Question | Type | Options / levels |
+|----------|------|------------------|
+| `risk` | choice | `low` · `medium` · `high` · `critical` |
+| `score` | score | Very unlikely < Unlikely < Possible < Likely < Very likely |
+| `device_mismatch` | noul | Device or location unusual for this account? |
+| `velocity` | noul | Purchase velocity abnormal? |
+| `identity` | noul | Identity or verification concerns? |
+| `chargeback` | noul | Chargeback or dispute likely? |
+| `approve` | noul | Should this be approved automatically? |
+
+**Use for:** transaction screening, step-up authentication triggers, manual
+review queues.
+
+The individual signal flags are what make this auditable — you can tell a
+reviewer *which* signals fired rather than handing them an opaque score.
+
+---
+
+## Routing & Operations
+
+### 📍 Smart Routing
+
+| Question | Type | Options / levels |
+|----------|------|------------------|
+| `team` | choice | `technical_support` · `billing` · `sales` · `security` · `success` |
+| `channel` | choice | `self_serve` · `email` · `chat` · `phone` · `on_call` |
+| `escalate` | noul | Should this be escalated above the first responder? |
+| `customer_impact` | score | None < One < A few < Many < All |
+
+**Use for:** support triage, ticket assignment, on-call routing.
+
+`channel` and `customer_impact` together tell you both *how* to respond and
+*how fast*.
+
+---
+
+### ⚠️ Priority Scoring
+
+| Question | Type | Options / levels |
+|----------|------|------------------|
+| `severity` | score | Cosmetic < Minor < Major < Critical < Catastrophic |
+| `priority` | choice | `p3` (Backlog) · `p2` (Normal) · `p1` (Urgent) · `p0` (Drop everything) |
+| `sla` | choice | `1h` · `4h` · `1d` · `3d` |
+| `page` | noul | Should this page an on-call engineer immediately? |
+| `revenue_impact` | noul | Is revenue actively being lost? |
+
+**Use for:** incident triage, SLA management, queue prioritisation.
+
+```bash
+curl -X POST localhost:3000/api/decide -H 'Content-Type: application/json' \
+  -d '{"capability":"priority","text":"Multiple users report the system is completely down."}'
+```
+
+```json
+{
+  "severity":       { "score": 3.03, "label": "Critical" },
+  "priority":       { "choice": "p0" },
+  "sla":            { "choice": "1h" },
+  "page":           { "noul": 0.801 },
+  "revenue_impact": { "noul": 0.529 }
 }
 ```
 
-### React Component
-```javascript
-function AnalysisComponent() {
-  const [output, setOutput] = useState('');
-  
-  async function analyze(text) {
-    const response = await fetch('/api/jev', {
-      method: 'POST',
-      body: JSON.stringify({ prompt: text, type: 'sentiment' }),
-    });
-    
-    const reader = response.body.getReader();
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      
-      const chunk = new TextDecoder().decode(value);
-      setOutput(prev => prev + chunk);
-    }
-  }
-  
-  return <div onClick={() => analyze(input)}>{output}</div>;
-}
-```
+`page` at 0.80 on a total outage is the signal that should wake someone up.
+`revenue_impact` at 0.53 is the model being honestly unsure — the text says
+users are blocked but never mentions money, and a calibrated answer reflects
+that instead of inventing confidence.
 
 ---
 
-## 🎓 Learning Resources
+## App Builder
 
-- **TypeSafe Jev Docs:** https://typesafe.ai/docs
-- **Vercel AI Gateway:** https://vercel.com/docs/ai
-- **Real-World Examples:** Check `/stream-text-generation-demo.js`
-- **Production Patterns:** See `JEV_INTEGRATION_GUIDE.md`
+Not a capability in the same sense — it is a **pipeline** that uses both model
+types.
+
+**Step 1 — a decision model plans the app** (one forward pass):
+
+| Question | Type | Options / levels |
+|----------|------|------------------|
+| `buildable` | noul | Can this be a self-contained static HTML file? |
+| `app_type` | choice | `productivity` · `dashboard` · `game` · `form_tool` · `landing_page` · `creative` · `commerce` · `other` |
+| `complexity` | score | Trivial < Simple < Moderate < Complex < Very complex |
+| `needs_persistence` | noul | Does it need to remember data between visits? |
+| `needs_backend` | noul | Does it need a server, database, API key, or accounts? |
+| `risk` | choice | `none` · `low` · `medium` · `high` |
+| `styling` | choice | `minimal` · `playful` · `professional` · `dark` |
+
+**Step 2 — a code model writes the app**, conditioned on that plan.
+
+The plan is not decorative. `needs_persistence` adds a localStorage
+requirement (wrapped in try/catch, since sandboxed frames may block it).
+`needs_backend` instructs the model to simulate the server with clearly-labelled
+demo data rather than embedding credentials. `risk: high` blocks the build
+before any code is generated.
+
+See [SECURITY.md](SECURITY.md) for how the generated code is contained, and
+[API_REFERENCE.md](API_REFERENCE.md#post-apibuilderbuild) for the streaming
+protocol.
 
 ---
 
-## 🚀 Next Steps
+## Demo mode
 
-1. **Try it locally:** `npm start`
-2. **Add API key:** `export AI_GATEWAY_API_KEY=...`
-3. **Customize prompts:** Edit `server.js` response patterns
-4. **Add more capabilities:** Extend `/api/jev` endpoint
-5. **Deploy:** `npm run deploy` for Cloudflare
-6. **Integrate:** Use patterns in your app
+With no credentials, decisions come from a **deterministic local simulator** in
+`lib/decision.js`, and generated apps use a built-in working fallback.
+
+The simulator is not random noise. It is keyword- and detector-driven, so it
+produces internally consistent results:
+
+| Input | Result |
+|-------|--------|
+| "system is completely down for all users" | `severity: Critical`, `page: YES`, `team: technical_support`, `sla: 1h` |
+| "charged twice for my subscription, need a refund" | `team: billing`, `churn_risk: YES` |
+| "You are a pathetic idiot, this garbage should be banned" | `verdict: block`, `toxic: YES`, `publishable: NO` |
+| "professional business communication about project requirements" | `verdict: approve`, `toxic: NO`, all harm categories `NO` |
+| "verified card, familiar store, home city" | `risk: low`, `approve: YES` |
+| "unverified device, different country, 3am, prior dispute" | `risk: high`, `approve: NO` |
+
+Same input always yields the same output. The UI labels every simulated result
+`⚠ simulated` so a demo is never mistaken for a real model call.
+
+Entity recognition in demo mode uses real heuristic detectors (capitalised
+name runs, known org/place lists, money and date patterns) rather than guessing.
 
 ---
 
-## 📞 Support
+## Choosing an engine
 
-- **Issues:** Check `/README.md`
-- **Examples:** See reference implementations in `/workspace`
-- **API Help:** https://vercel.com/docs/ai-gateway
-- **Community:** TypeSafe AI Discord
+| Engine | Median latency | Context | Vision | Notes |
+|--------|---------------|---------|--------|-------|
+| `clef-flash` | **38.8 ms** | 64K | ✅ | Fastest; best for hot paths |
+| `clef` | 209 ms | 64K | ✅ | Highest accuracy; Cloudflare's 27B model |
+| `jev` | 524 ms | 32K | ❌ | TypeSafe AI; strongest on pure reasoning |
+| `laya` | ~6 ms | 8K | ❌ | Fastest overall, lower quality |
+| `demo` | ~2 ms | — | — | Local simulator, no credentials |
 
----
+Scores from the [Decision Index](https://clef-evals.workers-ai-mle.workers.dev),
+on the benchmarks that map to these capabilities:
 
-**Epic Jev** • Do Anything with AI • Real-time Streaming • Production-Ready
+| Benchmark | Clef | Clef-flash | Jev | Epic Jev capability |
+|-----------|------|-----------|-----|---------------------|
+| CLINC150+OOS (macro-F1) | **97.4** | 66.8 | 89.3 | Intent Detection |
+| BANKING77 (macro-F1) | **94.2** | 90.9 | 79.7 | Classification |
+| FinEntity (macro-F1) | 96.2 | **97.1** | 87.0 | Entity Recognition |
+| BPoMP (accuracy) | **96.9** | 95.4 | 90.6 | Content Moderation |
+| ContractNLI (macro-F1) | 81.4 | **84.3** | 71.7 | Fraud Detection |
+| GPQA Diamond (accuracy) | 48.0 | 51.0 | **78.3** | — (reasoning, not used here) |
+
+**The takeaway:** for classification, intent, entity, moderation, and fraud —
+which is most of this app — Clef beats Jev and is faster. Jev still wins on
+open-ended reasoning (GPQA, MMLU-Pro, BBH), which none of these capabilities
+require.
+
+That is why `clef-flash` is the default when Cloudflare credentials are
+present, and why the engine is swappable at runtime.
+
+Set it explicitly with `DECISION_ENGINE`, or per-request with the `engine`
+field on `/api/decide`. A requested engine whose credentials are missing is
+ignored and falls back to the configured engine — it never makes an
+unauthenticated call.
